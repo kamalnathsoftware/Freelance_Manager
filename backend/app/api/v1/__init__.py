@@ -3,14 +3,18 @@ from fastapi import APIRouter
 from app.api.v1 import (
     ai,
     auth,
+    calendar,
     clients,
+    finance,
     gigs,
     inbox,
     ingest,
     jobs,
     notifications,
+    orders,
     platforms,
     profiles,
+    projects,
     proposals,
     search,
     users,
@@ -36,3 +40,7 @@ router.include_router(widget.router)
 router.include_router(ws.router)
 router.include_router(notifications.router)
 router.include_router(webhooks.router)
+router.include_router(orders.router)
+router.include_router(projects.router)
+router.include_router(finance.router)
+router.include_router(calendar.router)

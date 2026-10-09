@@ -20,7 +20,7 @@ from app.models import (
     SavedSearch,
     Stage,
 )
-from app.services import inbox, notifications
+from app.services import inbox, notifications, orders
 from app.services.email_parser import ParsedEmail
 from app.services.matching import score_job
 
@@ -143,6 +143,7 @@ async def record_event(db: AsyncSession, user_id: uuid.UUID, *, platform: str, k
         stats[field] = int(stats.get(field, 0)) + 1
         acc.stats = stats
     await db.flush()
+    await orders.apply_platform_event(db, user_id, ev)
     ntype = notifications.PLATFORM_EVENT_TYPE.get(kind)
     if ntype:
         await notifications.emit(

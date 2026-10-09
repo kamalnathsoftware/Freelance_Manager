@@ -14,12 +14,13 @@ from app.api.deps import DB, CurrentUser
 from app.api.deps_ingest import IngestUser
 from app.api.v1.jobs import JobIn, JobOut
 from app.core.config import get_settings
-from app.core.crypto import decrypt, encrypt
+from app.core.crypto import encrypt
 from app.models import ApiKey, MailConnection, PlatformEvent
 from app.schemas import ORM, Message
 from app.services import ingest as svc
 from app.services.common import get_owned
 from app.services.email_parser import parse_email
+from app.services.gcal import google_token
 
 router = APIRouter(tags=["ingest"])
 
@@ -225,7 +226,7 @@ async def gmail_poll(user: CurrentUser, db: DB) -> dict[str, int]:
 
 async def poll_gmail(db: Any, conn: MailConnection) -> dict[str, int]:
     """Fetch recent platform notification emails (metadata + snippet only) and ingest them."""
-    token = decrypt(conn.access_token_enc)
+    token = await google_token(db, conn)
     headers = {"Authorization": f"Bearer {token}"}
     base = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
     seen = ingested = 0

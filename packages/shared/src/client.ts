@@ -1,5 +1,5 @@
 import type {
-  ApiErrorBody, ApiKeyInfo, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  ApiErrorBody, ApiKeyInfo, CalendarItem, EarningsReport, Expense, FinanceSummary, Invoice, InvoiceItem, Order, Payment, Project, Task, TimeEntry, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
@@ -220,4 +220,50 @@ export class ApiClient {
   registerDevice = (b: { kind: "expo" | "webpush"; token: string; label?: string }) => this.post<{ id: string }>("/notifications/devices", b);
   testNotification = (channel: string) => this.post<{ status: string; error: string }>(`/notifications/test?channel=${channel}`);
   vapidKey = () => this.request<{ public_key: string }>("/notifications/vapid-key");
+
+  // orders / projects / time
+  orders = (status?: string) => this.request<Order[]>(`/orders${status ? `?status=${status}` : ""}`);
+  createOrder = (b: { platform: string; title: string; amount?: number; currency?: string; due_at?: string | null; client_id?: string | null }) => this.post<Order>("/orders", b);
+  orderStatus = (id: string, status: string) => this.post<Order>(`/orders/${id}/status?status=${status}`);
+  patchOrder = (id: string, b: Partial<Pick<Order, "title" | "checklist" | "amount">> & { due_at?: string | null }) => this.request<Order>(`/orders/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+  addMilestone = (id: string, b: { title: string; amount: number; due_at?: string | null }) => this.post<Order>(`/orders/${id}/milestones`, b);
+  milestoneAction = (id: string, mid: string, action: "submit" | "pay") => this.post<Order>(`/orders/${id}/milestones/${mid}/${action}`);
+  orderProject = (id: string) => this.post<{ project_id: string }>(`/orders/${id}/project`);
+  projects = () => this.request<Project[]>("/projects");
+  createProject = (b: { name: string; hourly_rate?: number | null; client_id?: string | null }) => this.post<Project>("/projects", b);
+  tasks = (pid: string) => this.request<Task[]>(`/projects/${pid}/tasks`);
+  addTask = (pid: string, b: { title: string; status?: Task["status"]; due_at?: string | null }) => this.post<Task>(`/projects/${pid}/tasks`, b);
+  updateTask = (id: string, b: { title: string; status: Task["status"]; priority?: string; due_at?: string | null }) => this.request<Task>(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(b) });
+  runningTimer = () => this.request<TimeEntry | null>("/time/running");
+  startTimer = (b: { project_id?: string | null; note?: string }) => this.post<TimeEntry>("/time/start", b);
+  stopTimer = () => this.post<TimeEntry>("/time/stop");
+  timeEntries = (project_id?: string) => this.request<TimeEntry[]>(`/time${project_id ? `?project_id=${project_id}` : ""}`);
+
+  // finance
+  invoices = () => this.request<Invoice[]>("/finance/invoices");
+  createInvoice = (b: { client_id?: string | null; currency?: string; due_date?: string | null; tax_pct?: number; items: InvoiceItem[]; notes?: string }) => this.post<Invoice>("/finance/invoices", b);
+  invoiceFromTime = (project_id: string) => this.post<Invoice>("/finance/invoices/from-time", { project_id });
+  invoiceAction = (id: string, action: "send" | "pay" | "void") => this.post<Invoice>(`/finance/invoices/${id}/${action}`);
+  expenses = () => this.request<Expense[]>("/finance/expenses");
+  addExpense = (b: { amount: number; category: string; description?: string; currency?: string }) => this.post<Expense>("/finance/expenses", b);
+  payments = () => this.request<Payment[]>("/finance/payments");
+  addPayment = (b: { platform: string; gross: number; currency?: string; note?: string }) => this.post<Payment>("/finance/payments", b);
+  feeCalc = (platform: string, amount: number) => this.request<{ gross: number; fee: number; net: number }>(`/finance/fee-calculator?platform=${platform}&amount=${amount}`);
+  report = (group_by: "month" | "platform" | "client" = "month") => this.request<EarningsReport>(`/finance/report?group_by=${group_by}`);
+  financeSummary = () => this.request<FinanceSummary>("/finance/summary");
+  /** Download helper: fetches with auth and returns a Blob (PDF/CSV/ICS). */
+  async blob(path: string): Promise<Blob> {
+    const t = await this.store.get();
+    const r = await fetch(`${this.baseUrl}/api/v1${path}`, { headers: t ? { Authorization: `Bearer ${t.access_token}` } : {} });
+    if (!r.ok) throw new ApiError(r.status, "download_failed", r.statusText);
+    return r.blob();
+  }
+
+  // calendar
+  calendar = () => this.request<CalendarItem[]>("/calendar");
+  addCalendarEvent = (b: { title: string; kind?: string; starts_at: string; ends_at?: string | null }) => this.post("/calendar/events", b);
+  calendarFeedUrl = () => this.request<{ url: string }>("/calendar/feed-url");
+  googleCalendarAuthUrl = () => this.request<{ url: string }>("/calendar/google/auth-url");
+  googleCalendarConnect = (code: string) => this.post("/calendar/google/connect", { code });
+  googleCalendarSync = () => this.post<{ pushed: number; pulled: number }>("/calendar/google/sync");
 }

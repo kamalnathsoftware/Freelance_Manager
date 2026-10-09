@@ -444,6 +444,19 @@ async def scan_reminders(db: AsyncSession, now: datetime | None = None) -> int:
             ev = await emit(db, p.user_id, "follow_up_due", f"Follow up: {j.title}", body=f"Submitted on {j.platform}; no outcome yet.",
                             url=f"/proposals/{p.id}", dedupe_key=f"followup:{p.id}:{p.follow_up_at.date()}")  # fmt: skip
             n += 1 if ev else 0
+    from app.services import calendar as cal
+
+    for d in await cal.due_soon(db, now):
+        ev = await emit(
+            db,
+            d["user_id"],
+            "deadline",
+            d["title"],
+            url=d["url"],
+            dedupe_key=d["key"],
+            data=d["data"],
+        )
+        n += 1 if ev else 0
     convs = (
         await db.execute(select(Conversation).where(Conversation.awaiting_reply_since.is_not(None)))
     ).scalars()

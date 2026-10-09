@@ -98,3 +98,28 @@ export interface NotificationPrefs {
   settings: { quiet_start: string; quiet_end: string; digest_hour: number; fallback: Record<string, string> };
 }
 export interface ChannelInfo { channel: string; address: string; opted_in: boolean; server_configured: boolean }
+
+export interface Milestone { id: string; title: string; amount: number; due_at: string | null; status: string; paid_at: string | null }
+export interface Order {
+  id: string; platform: string; external_ref: string | null; title: string; description: string; amount: number; currency: string;
+  status: "pending" | "active" | "delivered" | "revision" | "completed" | "cancelled"; client_id: string | null; due_at: string | null;
+  revisions_allowed: number; revisions_used: number; over_revision_limit: boolean; checklist: { item: string; done: boolean }[];
+  milestones: Milestone[]; files: { id: string; filename: string; url: string; kind: string }[]; client_name: string; project_id: string | null;
+}
+export interface Project { id: string; name: string; description: string; status: string; hourly_rate: number | null; currency: string; hours_tracked: number; tasks_total: number; tasks_done: number }
+export interface Task { id: string; project_id: string; title: string; status: "todo" | "doing" | "done"; priority: string; due_at: string | null; position: number }
+export interface TimeEntry { id: string; project_id: string | null; started_at: string; ended_at: string | null; note: string; billable: boolean; invoice_id: string | null; minutes: number }
+export interface InvoiceItem { description: string; quantity: number; unit_price: number }
+export interface Invoice {
+  id: string; number: string; currency: string; status: "draft" | "sent" | "paid" | "void"; issue_date: string; due_date: string | null;
+  items: InvoiceItem[]; tax_pct: number; subtotal: number; tax_amount: number; total: number; overdue: boolean; client_name: string; client_id: string | null;
+}
+export interface Expense { id: string; spent_on: string; amount: number; currency: string; category: string; description: string; tax_deductible: boolean }
+export interface Payment { id: string; platform: string; source: string; gross: number; fee: number; net: number; currency: string; received_on: string; note: string }
+export interface EarningsReport {
+  currency: string; rows: { key: string; gross: number; fee: number; net: number; count: number }[];
+  totals: { gross: number; fees: number; net: number; expenses: number; profit: number };
+  expenses_by_category: Record<string, number>; tax: { rate_pct: number; taxable_income: number; estimated_tax: number; disclaimer: string }; missing_fx_rates: string[];
+}
+export interface FinanceSummary { currency: string; month: EarningsReport["totals"]; outstanding_invoices: number; overdue_invoices: number; tax_set_aside: number; monthly_income_goal: number; goal_progress: number | null }
+export interface CalendarItem { id: string; kind: string; title: string; start: string; end: string | null; all_day: boolean; href: string }

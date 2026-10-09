@@ -7,8 +7,8 @@
 | 3 | Jobs, proposals, pipeline, browser extension, email ingestion | ✅ Done |
 | 4 | Unified inbox, real-time, CRM | ✅ Done |
 | 5 | Notifications (in-app, push, email, WhatsApp, …) | ✅ Done |
-| 6 | Orders, projects, time, invoices, finance | ⏳ Next |
-| 7 | Forms builder, automation rules, AI assistant | ⏳ |
+| 6 | Orders, projects, time, invoices, finance | ✅ Done |
+| 7 | Forms builder, automation rules, AI assistant | ⏳ Next |
 | 8 | Analytics, goals, polish, a11y, docs | ⏳ |
 
 ## Phase 1 — what exists
@@ -54,6 +54,13 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 **Web**: bell dropdown with unread badge (live via WebSocket), Notifications page (all + delivery log with retry), Settings: channel setup/opt-in/test sends, quiet hours, full preference matrix, browser-push enable + service worker. **Mobile**: Expo push registration on launch, tap deep-links into the thread.
 
 **Not verified against live providers**: WhatsApp/Twilio/Telegram/Expo/Web Push calls are tested with mocked HTTP only. WhatsApp needs a Meta-approved template named `fm_notification` (3 body params) before business-initiated sends work. The `deadline` event type exists but is emitted starting in Phase 6.
+
+## Phase 6 — what exists
+
+**Backend** (100 tests total): Orders (manual, from a won proposal, or **auto-created/updated from parsed platform emails**: new order, delivered/completed, revision, payment), status lifecycle with revision-limit warning, milestones (pay once; completion records only the unpaid remainder — no double counting), delivery checklist, file links, order->project. Projects with a todo/doing/done task board; **time tracking** (one running timer, manual entries, summary, CSV timesheet). Invoices (per-user numbering `INV-YYYY-0001`, tax, multi-currency, draft->sent->paid/void, **PDF**, bill unbilled time which locks entries and releases them on void). Expenses, payments (gross/fee/net — fee schedule per platform with user overrides), **platform-fee calculator**, earnings reports by month/platform/client with base-currency conversion from the user's manual FX table (unknown rates are flagged, not hidden), CSV export, flat-rate **tax estimate with an explicit not-tax-advice disclaimer**, monthly goal progress. Calendar: aggregated agenda (order/milestone/task/invoice deadlines, follow-ups, custom events), `.ics` download, secret-URL subscription feed (rotatable), **Google Calendar two-way sync** to a dedicated calendar (pull wins by `updated`, deadlines pushed one-way) with OAuth token refresh (also now used by Gmail polling, fixing the earlier no-refresh gap). Reminder job now emits `deadline` notifications (due within 24h, overdue invoices). Payment recorded -> `payment_received` notification. Migration `0006`.
+**Web**: Orders (status, checklist, milestones, project link), Projects (task board, live timer, timesheet export, invoice unbilled time), Finance (overview chart/KPIs/goal, invoices with PDF, expenses, payments, fee calculator), Calendar (agenda, add event, .ics, subscription URL, Google connect/sync). **Mobile**: Projects tab with start/stop timer.
+
+**Caveats**: default platform fee schedules are approximations — verify/override; FX is manual (no live rates); Google Calendar sync is tested against mocked HTTP only; invoices are not emailed to clients yet (PDF download + mark sent); the PDF uses core Latin-1 fonts (non-Latin characters are replaced).
 
 ## Not yet done / known gaps from Phase 1
 - Team members/VA roles: table exists, no invite/permission endpoints yet.

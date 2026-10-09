@@ -41,8 +41,34 @@ from app.models.platform import (
     SyncLog,
 )
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
+from app.models.work import (
+    CalendarConnection,
+    CalendarEvent,
+    CalendarFeedToken,
+    Expense,
+    Invoice,
+    Milestone,
+    Order,
+    OrderFile,
+    Payment,
+    Project,
+    Task,
+    TimeEntry,
+)
 
 __all__ = [
+    "CalendarConnection",
+    "CalendarEvent",
+    "CalendarFeedToken",
+    "Expense",
+    "Invoice",
+    "Milestone",
+    "Order",
+    "OrderFile",
+    "Payment",
+    "Project",
+    "Task",
+    "TimeEntry",
     "ChannelAddress",
     "DeviceToken",
     "NotificationDelivery",
