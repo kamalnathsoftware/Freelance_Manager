@@ -22,6 +22,32 @@ docker compose exec api python -m app.seed    # optional: realistic demo workspa
 
 ## Local development
 
+**Prerequisites:** Python 3.11+, Node 22+, (optional) Docker.
+
+**Windows (PowerShell) — no Docker, SQLite:**
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope Process Bypass
+pip install -e ".[dev]"
+$env:DATABASE_URL = "sqlite+aiosqlite:///./dev.db"
+$env:SECRET_KEY = "dev-secret-key-change-me-0123456789"
+$env:CORS_ORIGINS = '["http://localhost:3000"]'
+alembic upgrade head
+python -m app.seed
+uvicorn app.main:app --reload --port 8000
+```
+```powershell
+# second terminal, from the repo root
+npm install
+cd web
+$env:NEXT_PUBLIC_API_URL = "http://localhost:8000"
+npm run dev
+```
+(`&&` and `export` are bash-only; in PowerShell use `;` and `$env:NAME = "value"`.)
+
+**macOS / Linux:**
+
 ```bash
 # backend (Python 3.12+)
 cd backend && python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
