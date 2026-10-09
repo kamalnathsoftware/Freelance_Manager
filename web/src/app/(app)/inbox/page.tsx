@@ -103,7 +103,7 @@ export default function Inbox() {
                 {msgs.data?.map((m) => (
                   <li key={m.id} className={cn("max-w-[80%] rounded-2xl px-3 py-2 text-sm", m.direction === "out" ? "ml-auto bg-brand text-brand-fg" : "bg-border/50")}>
                     <p className="whitespace-pre-wrap">{m.body}</p>
-                    <p className="mt-1 text-[11px] opacity-70">
+                    <p className="mt-1 text-xs">
                       {new Date(m.created_at).toLocaleString()}{m.ai_generated && " · AI-assisted"}{m.delivery === "pending_manual" && " · waiting for you to paste on platform"}
                     </p>
                     {m.delivery === "pending_manual" && <button className="mt-1 text-xs underline" onClick={() => confirm.mutate(m.id)}>I sent it</button>}
