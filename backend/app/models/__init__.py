@@ -1,3 +1,35 @@
+from app.models.platform import (
+    AccountStatus,
+    Gig,
+    GigPackage,
+    GigPlatformListing,
+    GigStatus,
+    IntegrationMode,
+    IntegrationToken,
+    MasterProfile,
+    PlatformAccount,
+    PlatformProfile,
+    PortfolioItem,
+    SyncLog,
+)
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
 
-__all__ = ["AuditLog", "AuthSession", "Role", "TeamMember", "User"]
+__all__ = [
+    "AccountStatus",
+    "AuditLog",
+    "AuthSession",
+    "Gig",
+    "GigPackage",
+    "GigPlatformListing",
+    "GigStatus",
+    "IntegrationMode",
+    "IntegrationToken",
+    "MasterProfile",
+    "PlatformAccount",
+    "PlatformProfile",
+    "PortfolioItem",
+    "Role",
+    "SyncLog",
+    "TeamMember",
+    "User",
+]

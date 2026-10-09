@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     google_client_id: str = ""
     anthropic_api_key: str = ""
+    ai_model: str = "claude-sonnet-5-5"
     sentry_dsn: str = ""
     rate_limit_per_minute: int = 120
     auth_rate_limit_per_minute: int = 20

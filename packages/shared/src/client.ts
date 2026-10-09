@@ -1,4 +1,7 @@
-import type { ApiErrorBody, AuditEntry, LoginOut, SessionInfo, TokenPair, User } from "./types";
+import type {
+  ApiErrorBody, AuditEntry, Completeness, Gig, GigInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  PlatformProfile, SessionInfo, Suggestion, SyncLog, TokenPair, User,
+} from "./types";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) {
@@ -84,4 +87,36 @@ export class ApiClient {
   enable2fa = (code: string) => this.post("/me/2fa/enable", { code });
   disable2fa = (code: string) => this.post("/me/2fa/disable", { code });
   exportData = () => this.request<Record<string, unknown>>("/me/export");
+
+  // platforms
+  platformCatalog = () => this.request<PlatformInfo[]>("/platforms/catalog");
+  accounts = () => this.request<PlatformAccount[]>("/platforms/accounts");
+  addAccount = (b: { platform: string; label?: string; username?: string; profile_url?: string }) => this.post<PlatformAccount>("/platforms/accounts", b);
+  updateAccount = (id: string, b: Partial<Pick<PlatformAccount, "label" | "username" | "profile_url" | "stats">>) =>
+    this.request<PlatformAccount>(`/platforms/accounts/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+  connectToken = (id: string, access_token: string) =>
+    this.request<PlatformAccount>(`/platforms/accounts/${id}/token`, { method: "PUT", body: JSON.stringify({ access_token }) });
+  removeAccount = (id: string) => this.request(`/platforms/accounts/${id}`, { method: "DELETE" });
+  syncAccount = (id: string) => this.post<SyncLog>(`/platforms/accounts/${id}/sync`);
+  syncLogs = (id: string) => this.request<SyncLog[]>(`/platforms/accounts/${id}/logs`);
+
+  // profiles
+  master = () => this.request<MasterProfile | null>("/profile/master");
+  saveMaster = (b: MasterProfile) => this.request<MasterProfile>("/profile/master", { method: "PUT", body: JSON.stringify(b) });
+  completeness = (platform?: string) => this.request<Completeness>(`/profile/completeness${platform ? `?platform=${platform}` : ""}`);
+  platformProfiles = () => this.request<PlatformProfile[]>("/profile/platforms");
+  derivePlatformProfile = (accountId: string) => this.post<PlatformProfile>(`/profile/platforms/${accountId}/derive`);
+  editPlatformProfile = (accountId: string, b: Partial<Pick<PlatformProfile, "headline" | "bio" | "skills" | "hourly_rate">>) =>
+    this.request<PlatformProfile>(`/profile/platforms/${accountId}`, { method: "PATCH", body: JSON.stringify(b) });
+
+  // gigs
+  gigs = () => this.request<Gig[]>("/gigs");
+  createGig = (b: GigInput) => this.post<Gig>("/gigs", b);
+  updateGig = (id: string, b: GigInput) => this.request<Gig>(`/gigs/${id}`, { method: "PUT", body: JSON.stringify(b) });
+  deleteGig = (id: string) => this.request(`/gigs/${id}`, { method: "DELETE" });
+  cloneGig = (id: string, account_ids: string[]) => this.post(`/gigs/${id}/clone`, { account_ids });
+
+  // AI (suggestions only — caller must get user approval before saving)
+  aiRewrite = (b: { kind: "headline" | "bio" | "gig_title" | "gig_description"; text: string; platform?: string; tone?: string; keywords?: string[] }) =>
+    this.post<Suggestion>("/ai/rewrite", b);
 }
