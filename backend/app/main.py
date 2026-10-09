@@ -2,6 +2,7 @@ import logging
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import text
 
 from app.api.v1 import router as v1_router
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=s.app_name, version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json"
     )
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,

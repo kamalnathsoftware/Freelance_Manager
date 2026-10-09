@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     ai,
+    analytics,
     assistant,
     auth,
     automations,
@@ -14,12 +15,14 @@ from app.api.v1 import (
     ingest,
     jobs,
     notifications,
+    ops,
     orders,
     platforms,
     profiles,
     projects,
     proposals,
     search,
+    team,
     users,
     webhooks,
     widget,
@@ -50,3 +53,6 @@ router.include_router(calendar.router)
 router.include_router(forms.router)
 router.include_router(automations.router)
 router.include_router(assistant.router)
+router.include_router(team.router)
+router.include_router(analytics.router)
+router.include_router(ops.router)

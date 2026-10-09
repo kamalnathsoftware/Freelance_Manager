@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:admin@freelancemanager.local"
     rate_limit_per_minute: int = 120
     upload_dir: str = "./uploads"
+    admin_emails: list[str] = []  # users who can open /ops
     max_upload_mb: int = 5
     auth_rate_limit_per_minute: int = 20
 

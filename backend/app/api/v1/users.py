@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.api.deps import DB, CurrentAuth, CurrentUser, client_ip
 from app.core.security import hash_password, verify_password
-from app.models import AuditLog, AuthSession, TeamMember
+from app.models import AuditLog, AuthSession
 from app.schemas import (
     AuditOut,
     ChangePasswordIn,
@@ -17,6 +17,7 @@ from app.schemas import (
     UserUpdate,
 )
 from app.services import auth as svc
+from app.services import gdpr
 from app.services.audit import audit
 
 router = APIRouter(prefix="/me", tags=["account"])
@@ -124,17 +125,8 @@ async def audit_log(user: CurrentUser, db: DB, limit: int = 50, offset: int = 0)
 
 @router.get("/export")
 async def export_data(user: CurrentUser, db: DB) -> dict:
-    """GDPR-style export of everything stored about the user. Extend as modules are added."""
-    logs = (await db.execute(select(AuditLog).where(AuditLog.user_id == user.id))).scalars()
-    team = (await db.execute(select(TeamMember).where(TeamMember.owner_id == user.id))).scalars()
-    return {
-        "user": UserOut.model_validate(user).model_dump(mode="json"),
-        "audit_log": [AuditOut.model_validate(r).model_dump(mode="json") for r in logs],
-        "team_members": [
-            {"email": t.invite_email, "role": t.role.value, "created_at": t.created_at.isoformat()}
-            for t in team
-        ],
-    }
+    """GDPR data export: everything stored about the user, minus credential secrets."""
+    return await gdpr.export_all(db, user)
 
 
 @router.delete("", response_model=Message)
@@ -143,6 +135,7 @@ async def delete_account(body: ChangePasswordIn, user: CurrentUser, db: DB) -> M
     if user.password_hash and not verify_password(body.current_password, user.password_hash):
         raise HTTPException(400, "Password is incorrect")
     await audit(db, None, "account.deleted")
+    await gdpr.erase_files(db, user.id)
     await db.delete(user)
     await db.commit()
     return Message(detail="Account deleted")

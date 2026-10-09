@@ -13,26 +13,43 @@ from app.models import AuthSession
 router = APIRouter(tags=["realtime"])
 
 
-async def _authenticate(token: str) -> uuid.UUID | None:
+async def _authenticate(token: str, workspace: str = "") -> uuid.UUID | None:
     try:
         payload = decode_access_token(token)
         async with SessionLocal() as db:
             sess = await db.get(AuthSession, uuid.UUID(payload["sid"]))
             if sess is None or sess.revoked:
                 return None
-        return uuid.UUID(payload["sub"])
+            me = uuid.UUID(payload["sub"])
+            if workspace and workspace != str(
+                me
+            ):  # team member listening to the owner's events (any role may read)
+                from sqlalchemy import select
+
+                from app.models import TeamMember
+
+                owner = uuid.UUID(workspace)
+                tm = (
+                    await db.execute(
+                        select(TeamMember.id).where(
+                            TeamMember.owner_id == owner, TeamMember.member_user_id == me
+                        )
+                    )
+                ).first()
+                return owner if tm else None
+        return me
     except (jwt.PyJWTError, ValueError, KeyError):
         return None
 
 
 @router.websocket("/ws")
-async def ws(websocket: WebSocket, token: str = "") -> None:
+async def ws(websocket: WebSocket, token: str = "", workspace: str = "") -> None:
     """Real-time events for the signed-in user: message.new, conversation.updated, notification.new …
 
     Auth: `?token=<access token>` (browsers can't set headers on WebSocket). Clients should reconnect with a
     refreshed token when the socket closes with code 4401.
     """
-    user_id = await _authenticate(token)
+    user_id = await _authenticate(token, workspace)
     if user_id is None:
         await websocket.close(code=4401)
         return

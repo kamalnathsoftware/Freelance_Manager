@@ -13,6 +13,7 @@ from app.models import Client, Expense, Invoice, Order, Payment, Project, TimeEn
 from app.schemas import ORM, Message
 from app.services import finance as svc
 from app.services import notifications
+from app.services.analytics import goals_of as analytics_goals
 from app.services.common import get_owned
 from app.services.orders import record_payment
 
@@ -397,7 +398,7 @@ async def summary(user: CurrentUser, db: DB) -> dict[str, Any]:
     missing: set[str] = set()
     outstanding = sum(svc.to_base(user, i.total, i.currency, missing) for i in open_invoices)
     overdue = [i for i in open_invoices if i.due_date and i.due_date < today]
-    goal = float((user.settings or {}).get("monthly_income_goal", 0) or 0)
+    goal = analytics_goals(user)["monthly_income"]
     return {
         "currency": svc.base_currency(user), "month": month["totals"], "by_platform": month["rows"],
         "outstanding_invoices": round(outstanding, 2), "overdue_invoices": len(overdue),
