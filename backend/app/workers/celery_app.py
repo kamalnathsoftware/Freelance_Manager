@@ -12,6 +12,9 @@ celery_app.conf.update(
     timezone="UTC",
     beat_schedule={
         "sync-api-accounts": {"task": "fm.sync_all_api_accounts", "schedule": 15 * 60.0},
+        "deliver-due-notifications": {"task": "fm.deliver_due", "schedule": 60.0},
+        "flush-digests": {"task": "fm.flush_digests", "schedule": 3600.0},
+        "scan-reminders": {"task": "fm.scan_reminders", "schedule": 5 * 60.0},
     },
 )
 
@@ -61,3 +64,33 @@ def sync_all_api_accounts() -> int:
     for i in ids:
         sync_account_task.delay(i)
     return len(ids)
+
+
+async def _with_db(fn):  # type: ignore[no-untyped-def]
+    from app.core.db import SessionLocal
+
+    async with SessionLocal() as db:
+        out = await fn(db)
+        await db.commit()
+        return out
+
+
+@celery_app.task(name="fm.deliver_due")
+def deliver_due() -> int:
+    from app.services.notifications import process_due
+
+    return asyncio.run(_with_db(process_due))
+
+
+@celery_app.task(name="fm.flush_digests")
+def flush_digests_task() -> int:
+    from app.services.notifications import flush_digests
+
+    return asyncio.run(_with_db(flush_digests))
+
+
+@celery_app.task(name="fm.scan_reminders")
+def scan_reminders_task() -> int:
+    from app.services.notifications import scan_reminders
+
+    return asyncio.run(_with_db(scan_reminders))

@@ -19,6 +19,13 @@ from app.models.jobs import (
     SavedSearch,
     Stage,
 )
+from app.models.notify import (
+    ChannelAddress,
+    DeviceToken,
+    NotificationDelivery,
+    NotificationEvent,
+    NotificationPreference,
+)
 from app.models.platform import (
     AccountStatus,
     Gig,
@@ -36,6 +43,11 @@ from app.models.platform import (
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
 
 __all__ = [
+    "ChannelAddress",
+    "DeviceToken",
+    "NotificationDelivery",
+    "NotificationEvent",
+    "NotificationPreference",
     "Attachment",
     "CannedResponse",
     "ChatWidget",

@@ -19,7 +19,7 @@ from app.models import (
     Stage,
 )
 from app.schemas import ORM, Message
-from app.services import ai
+from app.services import ai, notifications
 from app.services import proposals as svc
 from app.services.common import get_owned
 from app.services.sync import context_for
@@ -388,5 +388,10 @@ async def adjust_credits(
     stats = dict(acc.stats or {})
     stats["credits"] = balance
     acc.stats = stats
+    if balance < 10:
+        await notifications.emit(
+            db, user.id, "low_credits", f"{acc.label or acc.platform}: only {balance} credits left", url="/platforms",
+            dedupe_key=f"credits:{acc.id}:{balance}",
+        )  # fmt: skip
     await db.commit()
     return {"balance": balance, "low": balance < 10}

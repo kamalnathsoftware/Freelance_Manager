@@ -8,11 +8,13 @@ from app.api.v1 import (
     inbox,
     ingest,
     jobs,
+    notifications,
     platforms,
     profiles,
     proposals,
     search,
     users,
+    webhooks,
     widget,
     ws,
 )
@@ -32,3 +34,5 @@ router.include_router(clients.router)
 router.include_router(search.router)
 router.include_router(widget.router)
 router.include_router(ws.router)
+router.include_router(notifications.router)
+router.include_router(webhooks.router)

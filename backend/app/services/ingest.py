@@ -20,7 +20,7 @@ from app.models import (
     SavedSearch,
     Stage,
 )
-from app.services import inbox
+from app.services import inbox, notifications
 from app.services.email_parser import ParsedEmail
 from app.services.matching import score_job
 
@@ -143,6 +143,12 @@ async def record_event(db: AsyncSession, user_id: uuid.UUID, *, platform: str, k
         stats[field] = int(stats.get(field, 0)) + 1
         acc.stats = stats
     await db.flush()
+    ntype = notifications.PLATFORM_EVENT_TYPE.get(kind)
+    if ntype:
+        await notifications.emit(
+            db, user_id, ntype, title or kind.replace("_", " ").title(), body=summary[:300], url=url or "/jobs",
+            data={"platform": platform, "event_id": str(ev.id), **(meta or {})}, dedupe_key=f"pev:{ev.id}",
+        )  # fmt: skip
     return ev, True
 
 

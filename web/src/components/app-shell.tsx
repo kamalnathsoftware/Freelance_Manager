@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { useRealtime } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
 import { NAV } from "./nav";
+import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 
@@ -51,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur">
           <CommandPalette />
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="sm" aria-label="Notifications"><Bell size={16} /></Button>
+            <NotificationBell enabled={ready} />
             <ThemeToggle />
             <span className="hidden px-2 text-sm text-muted sm:inline">{me.data?.full_name || me.data?.email}</span>
             <Button variant="ghost" size="sm" aria-label="Log out" onClick={async () => { await api.logout(); router.replace("/login"); }}>

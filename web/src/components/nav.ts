@@ -1,6 +1,6 @@
 import {
   BarChart3, Briefcase, FileText, FolderKanban, Inbox, KanbanSquare, LayoutDashboard, Settings,
-  Plug, Sparkles, UserCircle, Users, Wallet, Zap, type LucideIcon,
+  Bell, Plug, Sparkles, UserCircle, Users, Wallet, Zap, type LucideIcon,
 } from "lucide-react";
 
 export const NAV: { label: string; href: string; icon: LucideIcon }[] = [
@@ -17,5 +17,6 @@ export const NAV: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Forms", href: "/forms", icon: FileText },
   { label: "Automations", href: "/automations", icon: Zap },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

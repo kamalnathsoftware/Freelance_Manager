@@ -29,6 +29,24 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     ai_model: str = "claude-sonnet-5-5"
     sentry_dsn: str = ""
+    # Notifications
+    whatsapp_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = ""
+    whatsapp_app_secret: str = ""
+    whatsapp_template: str = (
+        "fm_notification"  # approved template with 3 body params: title, body, reply code
+    )
+    whatsapp_template_lang: str = "en"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from: str = ""
+    telegram_bot_token: str = ""
+    telegram_webhook_secret: str = ""
+    expo_access_token: str = ""
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:admin@freelancemanager.local"
     rate_limit_per_minute: int = 120
     auth_rate_limit_per_minute: int = 20
 

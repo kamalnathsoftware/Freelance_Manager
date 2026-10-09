@@ -6,6 +6,7 @@ import { Card, Skeleton } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
+import { NotificationSettings } from "@/components/notification-settings";
 
 function ApiKeys() {
   const qc = useQueryClient();
@@ -85,6 +86,7 @@ export default function Settings() {
           ))}
         </ul>
       </Card>
+      <NotificationSettings />
       <ApiKeys />
       <Card className="space-y-3">
         <h2 className="font-semibold">Integration status</h2>

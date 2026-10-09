@@ -8,6 +8,7 @@ from app.adapters.base import AdapterContext, Capability, NotConfiguredError, No
 from app.adapters.registry import get_adapter
 from app.core.crypto import decrypt
 from app.models import AccountStatus, IntegrationMode, IntegrationToken, PlatformAccount, SyncLog
+from app.services import notifications
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +48,11 @@ async def sync_account(db: AsyncSession, acc: PlatformAccount) -> SyncLog:
         log.exception("sync failed account=%s", acc.id)
         acc.status, acc.last_error = AccountStatus.error, str(e)[:500]
         entry.status, entry.message = "error", str(e)[:500]
+    if entry.status == "error":
+        await notifications.emit(
+            db, acc.user_id, "sync_failure", f"{acc.label or acc.platform} sync failed", body=entry.message, url="/platforms",
+            dedupe_key=f"sync:{acc.id}:{datetime.now(UTC).date()}",
+        )  # fmt: skip
     entry.finished_at = datetime.now(UTC)
     acc.last_synced_at = entry.finished_at
     await db.flush()

@@ -20,6 +20,7 @@ from app.models import (
     PlatformAccount,
     User,
 )
+from app.services import notifications
 
 DEFAULT_SLA_MINUTES = 20
 
@@ -141,6 +142,15 @@ async def add_inbound(
             "preview": body[:120],
         },
     )
+    vip = False
+    if conv.client_id:
+        cl = await db.get(Client, conv.client_id)
+        vip = bool(cl and cl.vip)
+    await notifications.emit(
+        db, conv.user_id, "new_message", f"New {conv.platform} message" + (f" from {sender}" if sender else ""), body=body[:200],
+        url=f"/inbox?c={conv.id}", priority="high" if vip else "normal", data={"conversation_id": str(conv.id), "platform": conv.platform},
+        dedupe_key=f"msg:{msg.id}",
+    )  # fmt: skip
     return msg
 
 

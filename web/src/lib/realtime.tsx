@@ -16,6 +16,8 @@ export function useRealtime(enabled: boolean) {
         void qc.invalidateQueries({ queryKey: ["unread"] });
         void qc.invalidateQueries({ queryKey: ["messages", e.data.conversation_id] });
         toast(`New ${String(e.data.platform)} message: ${String(e.data.preview ?? "")}`);
+      } else if (e.event === "notification.new") {
+        void qc.invalidateQueries({ queryKey: ["notifications"] });
       } else if (e.event === "conversation.updated") {
         void qc.invalidateQueries({ queryKey: ["conversations"] });
         void qc.invalidateQueries({ queryKey: ["messages", e.data.conversation_id] });

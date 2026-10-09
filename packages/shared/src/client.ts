@@ -1,5 +1,5 @@
 import type {
-  ApiErrorBody, ApiKeyInfo, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  ApiErrorBody, ApiKeyInfo, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
@@ -204,4 +204,20 @@ export class ApiClient {
     void open();
     return () => { stop = true; ws?.close(); };
   };
+
+  // notifications
+  notifications = (unread = false) => this.request<{ items: AppNotification[]; unread: number }>(`/notifications${unread ? "?unread=true" : ""}`);
+  markRead = (id: string) => this.post<AppNotification>(`/notifications/${id}/read`);
+  markAllRead = () => this.post("/notifications/read-all");
+  deliveries = (status?: string) => this.request<Delivery[]>(`/notifications/deliveries${status ? `?status=${status}` : ""}`);
+  retryDelivery = (id: string) => this.post<Delivery>(`/notifications/deliveries/${id}/retry`);
+  notificationPrefs = () => this.request<NotificationPrefs>("/notifications/preferences");
+  saveNotificationPrefs = (b: { matrix?: NotificationPrefs["matrix"]; quiet_start?: string; quiet_end?: string; digest_hour?: number }) =>
+    this.request<NotificationPrefs>("/notifications/preferences", { method: "PUT", body: JSON.stringify(b) });
+  channels = () => this.request<ChannelInfo[]>("/notifications/channels");
+  saveChannel = (b: { channel: string; address: string; opted_in: boolean }) => this.request("/notifications/channels", { method: "PUT", body: JSON.stringify(b) });
+  telegramLink = () => this.post<{ code: string; instructions: string }>("/notifications/channels/telegram/link");
+  registerDevice = (b: { kind: "expo" | "webpush"; token: string; label?: string }) => this.post<{ id: string }>("/notifications/devices", b);
+  testNotification = (channel: string) => this.post<{ status: string; error: string }>(`/notifications/test?channel=${channel}`);
+  vapidKey = () => this.request<{ public_key: string }>("/notifications/vapid-key");
 }

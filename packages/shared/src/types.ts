@@ -89,3 +89,12 @@ export interface Client {
 export type ClientInput = Omit<Client, "id" | "identities" | "lifetime_value" | "repeat_client" | "won_proposals">;
 export interface SearchResults { [group: string]: { id: string; title: string; subtitle: string; href: string }[] }
 export interface RealtimeEvent { event: string; data: Record<string, unknown> }
+
+export interface AppNotification { id: string; type: string; title: string; body: string; url: string; priority: string; read_at: string | null; created_at: string }
+export interface Delivery { id: string; event_id: string; channel: string; status: string; attempts: number; error: string; mode: string; next_attempt_at: string | null; fallback_of: string | null; sent_at: string | null; created_at: string; event_title: string }
+export interface NotificationPrefs {
+  event_types: { type: string; label: string }[]; channels: string[];
+  matrix: Record<string, Record<string, { enabled: boolean; mode: "instant" | "hourly" | "daily" }>>;
+  settings: { quiet_start: string; quiet_end: string; digest_hour: number; fallback: Record<string, string> };
+}
+export interface ChannelInfo { channel: string; address: string; opted_in: boolean; server_configured: boolean }

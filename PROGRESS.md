@@ -6,8 +6,8 @@
 | 2 | Platform hub, profiles, gigs, AI rewrite | ✅ Done |
 | 3 | Jobs, proposals, pipeline, browser extension, email ingestion | ✅ Done |
 | 4 | Unified inbox, real-time, CRM | ✅ Done |
-| 5 | Notifications (in-app, push, email, WhatsApp, …) | ⏳ Next |
-| 6 | Orders, projects, time, invoices, finance | ⏳ |
+| 5 | Notifications (in-app, push, email, WhatsApp, …) | ✅ Done |
+| 6 | Orders, projects, time, invoices, finance | ⏳ Next |
 | 7 | Forms builder, automation rules, AI assistant | ⏳ |
 | 8 | Analytics, goals, polish, a11y, docs | ⏳ |
 
@@ -45,6 +45,15 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 **Mobile**: Inbox tab with swipe snooze/archive, pull-to-refresh, offline cache + "offline" banner, conversation screen, replies queued offline and flushed with idempotency keys.
 
 **Limitations**: WebSocket hub is in-process (needs a Redis bridge for >1 API replica); the chat widget polls every 5 s; attachments are stored as URLs (no upload/storage service yet — needs S3/R2 in a later phase); translation/tone/summary need `ANTHROPIC_API_KEY`; migrations are verified on SQLite only (Postgres run recommended in CI); team-member invites/permissions are still not implemented (assignee check already honours `TeamMember`).
+
+## Phase 5 — what exists
+
+**Engine** (`services/notifications.py`, 80 backend tests total): 15 event types x 6 channels (in-app, push, email, WhatsApp, SMS, Telegram) preference matrix with per-cell instant/hourly/daily mode; quiet hours in the user's timezone; **urgent items (VIP clients, SLA breaches) bypass quiet hours and digests**; de-duplication by key; queued delivery with exponential backoff (2/4/8 min, 4 attempts); **per-channel fallback** (WhatsApp/SMS/Telegram/push -> email, configurable); delivery log with manual retry; digest flush (hourly, or daily at the user's digest hour); Celery beat jobs for due deliveries (1 min), digests (hourly) and reminders (5 min: proposal follow-ups, SLA breaches). Triggered from: inbound messages, parsed platform events (orders, offers, revisions, payments, reviews, bid viewed/accepted/declined, job matches), sync failures, low credits.
+**Channels**: SMTP email; Expo push (-> FCM/APNs) and Web Push (VAPID, needs optional `pywebpush`); WhatsApp Cloud API (approved template with title/body/reply-code params); Twilio SMS; Telegram bot with `/start <code>` linking. WhatsApp/SMS are **never sent without a number and explicit opt-in**; WhatsApp `STOP`/`START` toggle opt-in.
+**Webhooks**: WhatsApp verify (GET) + inbound (POST, HMAC-SHA256 signature mandatory; 503 if unconfigured) — replies are routed to the right thread via WhatsApp reply-context or a leading short code (`A7F2 thanks!`); failed-status receipts trigger fallback. Because most platforms have no messaging API, a routed reply is saved as `pending_manual` and the user is told to paste it on the platform. Telegram webhook (secret-header verified).
+**Web**: bell dropdown with unread badge (live via WebSocket), Notifications page (all + delivery log with retry), Settings: channel setup/opt-in/test sends, quiet hours, full preference matrix, browser-push enable + service worker. **Mobile**: Expo push registration on launch, tap deep-links into the thread.
+
+**Not verified against live providers**: WhatsApp/Twilio/Telegram/Expo/Web Push calls are tested with mocked HTTP only. WhatsApp needs a Meta-approved template named `fm_notification` (3 body params) before business-initiated sends work. The `deadline` event type exists but is emitted starting in Phase 6.
 
 ## Not yet done / known gaps from Phase 1
 - Team members/VA roles: table exists, no invite/permission endpoints yet.
