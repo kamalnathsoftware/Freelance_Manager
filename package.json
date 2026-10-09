@@ -1,0 +1,16 @@
+{
+  "name": "freelance-manager",
+  "private": true,
+  "workspaces": [
+    "web",
+    "mobile",
+    "packages/*"
+  ],
+  "scripts": {
+    "web": "npm -w web run dev",
+    "lint": "npm -w web run lint",
+    "typecheck": "npm -w web run typecheck && npm -w @fm/shared run typecheck",
+    "test": "npm -w web run test",
+    "build": "npm -w web run build"
+  }
+}

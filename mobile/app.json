@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Freelance Manager",
+    "slug": "freelance-manager",
+    "scheme": "freelancemanager",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"],
+    "experiments": { "typedRoutes": false },
+    "ios": { "bundleIdentifier": "com.freelancemanager.app", "infoPlist": { "NSFaceIDUsageDescription": "Unlock Freelance Manager" } },
+    "android": { "package": "com.freelancemanager.app" }
+  }
+}
