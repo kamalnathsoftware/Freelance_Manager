@@ -1,5 +1,5 @@
 import type {
-  ApiErrorBody, ApiKeyInfo, CalendarItem, EarningsReport, Expense, FinanceSummary, Invoice, InvoiceItem, Order, Payment, Project, Task, TimeEntry, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  ApiErrorBody, ApiKeyInfo, AutomationMeta, AutomationRule, AutomationRun, Briefing, FormDef, FormSubmission, PublicForm, Requirements, CalendarItem, EarningsReport, Expense, FinanceSummary, Invoice, InvoiceItem, Order, Payment, Project, Task, TimeEntry, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
@@ -266,4 +266,27 @@ export class ApiClient {
   googleCalendarAuthUrl = () => this.request<{ url: string }>("/calendar/google/auth-url");
   googleCalendarConnect = (code: string) => this.post("/calendar/google/connect", { code });
   googleCalendarSync = () => this.post<{ pushed: number; pulled: number }>("/calendar/google/sync");
+
+  // forms
+  formTemplates = () => this.request<{ key: string; title: string; kind: string; description: string; field_count: number }[]>("/forms/templates");
+  forms = () => this.request<FormDef[]>("/forms");
+  formFromTemplate = (key: string) => this.post<FormDef>(`/forms/from-template/${key}`);
+  createForm = (b: Pick<FormDef, "title" | "description" | "kind" | "settings" | "fields">) => this.post<FormDef>("/forms", b);
+  saveForm = (id: string, b: Pick<FormDef, "title" | "description" | "kind" | "settings" | "fields">) => this.request<FormDef>(`/forms/${id}`, { method: "PUT", body: JSON.stringify(b) });
+  publishForm = (id: string, published: boolean) => this.post<FormDef>(`/forms/${id}/publish?published=${published}`);
+  deleteForm = (id: string) => this.request(`/forms/${id}`, { method: "DELETE" });
+  formSubmissions = (id: string) => this.request<FormSubmission[]>(`/forms/${id}/submissions`);
+
+  // automations & assistant
+  automationMeta = () => this.request<AutomationMeta>("/automations/meta");
+  automations = () => this.request<AutomationRule[]>("/automations");
+  saveAutomation = (b: Omit<AutomationRule, "id" | "run_count" | "last_run_at">, id?: string) =>
+    id ? this.request<AutomationRule>(`/automations/${id}`, { method: "PUT", body: JSON.stringify(b) }) : this.post<AutomationRule>("/automations", b);
+  toggleAutomation = (id: string) => this.post<AutomationRule>(`/automations/${id}/toggle`);
+  deleteAutomation = (id: string) => this.request(`/automations/${id}`, { method: "DELETE" });
+  testAutomation = (id: string, payload: Record<string, unknown>) => this.post<{ matched: boolean; actions: string[] }>(`/automations/${id}/test`, { payload });
+  automationRuns = (id: string) => this.request<AutomationRun[]>(`/automations/${id}/runs`);
+  briefing = (narrative = false) => this.request<Briefing>(`/assistant/briefing${narrative ? "?narrative=true" : ""}`);
+  extractRequirements = (b: { text?: string; conversation_id?: string }) => this.post<Requirements>("/assistant/extract-requirements", b);
+  assistantChat = (message: string, history: { role: string; content: string }[]) => this.post<{ text: string }>("/assistant/chat", { message, history });
 }

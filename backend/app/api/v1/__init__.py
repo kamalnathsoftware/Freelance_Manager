@@ -2,10 +2,13 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     ai,
+    assistant,
     auth,
+    automations,
     calendar,
     clients,
     finance,
+    forms,
     gigs,
     inbox,
     ingest,
@@ -44,3 +47,6 @@ router.include_router(orders.router)
 router.include_router(projects.router)
 router.include_router(finance.router)
 router.include_router(calendar.router)
+router.include_router(forms.router)
+router.include_router(automations.router)
+router.include_router(assistant.router)

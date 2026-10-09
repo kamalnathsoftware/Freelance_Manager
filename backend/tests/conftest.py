@@ -4,6 +4,7 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["AUTH_RATE_LIMIT_PER_MINUTE"] = "10000"
 os.environ["RATE_LIMIT_PER_MINUTE"] = "10000"
+os.environ["UPLOAD_DIR"] = __import__("tempfile").mkdtemp(prefix="fm-uploads-")
 
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402

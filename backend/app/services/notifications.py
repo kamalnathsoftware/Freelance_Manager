@@ -41,12 +41,14 @@ EVENT_TYPES: dict[str, str] = {
     "low_credits": "Low credits",
     "sla_breach": "Client waiting too long",
     "follow_up_due": "Proposal follow-up due",
+    "form_submitted": "Form submitted",
+    "automation": "Automation alert",
 }
 CHANNEL_NAMES = ["in_app", "push", "email", "whatsapp", "sms", "telegram"]
 # Defaults are conservative: noisy or paid channels (WhatsApp/SMS/Telegram) are opt-in per event.
 _DEFAULT_ON: dict[str, set[str]] = {
     "in_app": set(EVENT_TYPES),
-    "push": {"new_message", "new_order", "order_status", "bid_accepted", "deadline", "revision_requested", "payment_received", "sla_breach"},
+    "push": {"new_message", "new_order", "order_status", "bid_accepted", "deadline", "revision_requested", "payment_received", "sla_breach", "form_submitted", "automation"},
     "email": {"new_order", "bid_accepted", "deadline", "revision_requested", "payment_received", "review_received", "sync_failure", "low_credits"},
     "whatsapp": set(), "sms": set(), "telegram": set(),
 }  # fmt: skip
@@ -164,6 +166,7 @@ async def notify(
     data: dict[str, Any] | None = None,
     dedupe_key: str | None = None,
     attempt_now: bool = True,
+    only_channels: set[str] | None = None,
 ) -> NotificationEvent | None:
     """Create a notification and plan its deliveries. Returns None when `dedupe_key` was already used."""
     if type_ not in EVENT_TYPES:
@@ -195,6 +198,10 @@ async def notify(
     deliveries: list[NotificationDelivery] = []
     for ch in CHANNEL_NAMES:
         enabled, mode = await preference(db, user.id, type_, ch)
+        if (
+            only_channels is not None
+        ):  # explicit routing from an automation rule: overrides the matrix
+            enabled = ch in only_channels or ch == "in_app"
         if not enabled:
             continue
         if ch == "in_app":

@@ -15,6 +15,7 @@ celery_app.conf.update(
         "deliver-due-notifications": {"task": "fm.deliver_due", "schedule": 60.0},
         "flush-digests": {"task": "fm.flush_digests", "schedule": 3600.0},
         "scan-reminders": {"task": "fm.scan_reminders", "schedule": 5 * 60.0},
+        "scan-automations": {"task": "fm.scan_automations", "schedule": 10 * 60.0},
     },
 )
 
@@ -94,3 +95,10 @@ def scan_reminders_task() -> int:
     from app.services.notifications import scan_reminders
 
     return asyncio.run(_with_db(scan_reminders))
+
+
+@celery_app.task(name="fm.scan_automations")
+def scan_automations_task() -> int:
+    from app.services.automation import scan_stale
+
+    return asyncio.run(_with_db(scan_stale))

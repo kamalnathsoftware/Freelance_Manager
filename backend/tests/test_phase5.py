@@ -107,7 +107,7 @@ async def test_preference_matrix_and_defaults(auth_client):
     p = (await auth_client.get(f"{P}/notifications/preferences")).json()
     assert p["matrix"]["new_message"]["in_app"]["enabled"] is True
     assert p["matrix"]["new_message"]["whatsapp"]["enabled"] is False  # paid channels are opt-in
-    assert len(p["event_types"]) == 15
+    assert len(p["event_types"]) == 17
     p = await prefs(auth_client, {"new_message": {"email": {"enabled": True, "mode": "instant"}}})
     assert p["matrix"]["new_message"]["email"]["enabled"] is True
     assert (

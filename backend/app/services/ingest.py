@@ -20,7 +20,7 @@ from app.models import (
     SavedSearch,
     Stage,
 )
-from app.services import inbox, notifications, orders
+from app.services import automation, inbox, notifications, orders
 from app.services.email_parser import ParsedEmail
 from app.services.matching import score_job
 
@@ -89,6 +89,13 @@ async def upsert_job(
     await db.flush()
     if created:
         await maybe_alert(db, user_id, job)
+        await automation.fire(
+            db, user_id, "job.created",
+            {"job_id": str(job.id), "platform": job.platform, "title": job.title, "score": job.score, "budget_min": job.budget_min or 0,
+             "budget_max": job.budget_max or 0, "budget_type": job.budget_type, "skills": list(job.skills), "source": job.source,
+             "description": (job.description or "")[:500]},
+            dedupe_key=f"job:{job.id}",
+        )  # fmt: skip
     return job, created
 
 

@@ -145,7 +145,7 @@ def invoice_pdf(inv: Invoice, user: User, client: Client | None) -> bytes:
     pdf.ln(12)
     if inv.notes:
         pdf.set_font("Helvetica", "", 9)
-        pdf.multi_cell(0, 5, _latin(inv.notes))
+        pdf.multi_cell(0, 5, _latin(inv.notes), new_x="LMARGIN", new_y="NEXT")
     return bytes(pdf.output())
 
 

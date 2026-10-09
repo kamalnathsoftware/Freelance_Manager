@@ -1,3 +1,11 @@
+from app.models.forms import (
+    AutomationRule,
+    AutomationRun,
+    Form,
+    FormField,
+    FormSubmission,
+    UploadedFile,
+)
 from app.models.inbox import (
     Attachment,
     CannedResponse,
@@ -57,6 +65,12 @@ from app.models.work import (
 )
 
 __all__ = [
+    "AutomationRule",
+    "AutomationRun",
+    "Form",
+    "FormField",
+    "FormSubmission",
+    "UploadedFile",
     "CalendarConnection",
     "CalendarEvent",
     "CalendarFeedToken",

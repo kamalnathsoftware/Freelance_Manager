@@ -17,7 +17,7 @@ from app.models import (
     User,
 )
 from app.models.work import ORDER_STATUSES
-from app.services import finance
+from app.services import automation, finance
 
 
 async def record_payment(
@@ -51,6 +51,11 @@ async def record_payment(
         p.received_on = received_on
     db.add(p)
     await db.flush()
+    await automation.fire(
+        db, user.id, "payment.received",
+        {"platform": platform, "amount": gross, "net": p.net, "currency": currency, "source": source, "client_id": str(client_id or "")},
+        dedupe_key=f"pay:{p.id}",
+    )  # fmt: skip
     return p, True
 
 
@@ -96,6 +101,11 @@ async def set_status(db: AsyncSession, order: Order, status: str) -> None:
             )  # fmt: skip
             net = p.net if created else 0.0
         await _bump_client(db, order, net + paid)
+    await automation.fire(
+        db, order.user_id, "order.status_changed",
+        {"order_id": str(order.id), "status": status, "platform": order.platform, "title": order.title, "client_id": str(order.client_id or ""), "amount": order.amount},
+        dedupe_key=f"order:{order.id}:{status}:{order.revisions_used}",
+    )  # fmt: skip
 
 
 async def pay_milestone(db: AsyncSession, order: Order, m: Milestone) -> Payment | None:

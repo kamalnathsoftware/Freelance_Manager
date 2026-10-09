@@ -8,8 +8,8 @@
 | 4 | Unified inbox, real-time, CRM | ✅ Done |
 | 5 | Notifications (in-app, push, email, WhatsApp, …) | ✅ Done |
 | 6 | Orders, projects, time, invoices, finance | ✅ Done |
-| 7 | Forms builder, automation rules, AI assistant | ⏳ Next |
-| 8 | Analytics, goals, polish, a11y, docs | ⏳ |
+| 7 | Forms builder, automation rules, AI assistant | ✅ Done |
+| 8 | Analytics, goals, polish, a11y, docs | ⏳ Next |
 
 ## Phase 1 — what exists
 
@@ -61,6 +61,15 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 **Web**: Orders (status, checklist, milestones, project link), Projects (task board, live timer, timesheet export, invoice unbilled time), Finance (overview chart/KPIs/goal, invoices with PDF, expenses, payments, fee calculator), Calendar (agenda, add event, .ics, subscription URL, Google connect/sync). **Mobile**: Projects tab with start/stop timer.
 
 **Caveats**: default platform fee schedules are approximations — verify/override; FX is manual (no live rates); Google Calendar sync is tested against mocked HTTP only; invoices are not emailed to clients yet (PDF download + mark sent); the PDF uses core Latin-1 fonts (non-Latin characters are replaced).
+
+## Phase 7 — what exists
+
+**Forms** (127 backend tests total, 96% coverage): schema builder with 11 field types, validation of keys/types/options, **conditional logic** (`show_if`, evaluated server-side — hidden answers are dropped and never required), versioning on edit, 5 built-in templates (project brief, revision request, client onboarding, review request, NDA). **Public forms** at `/f/<key>` (embeddable via iframe): server-side validation, honeypot, per-IP rate limit, CORS only on `/public/*`, file upload with type/size limits (local-disk store behind `services/storage.py`; owner-only download with `nosniff`). Submissions land in CRM (client by email) + inbox (conversation) + notification, and can **auto-create a project and/or a job + proposal draft**; CSV export neutralises spreadsheet-formula injection. **E-signature / NDA**: typed-name + explicit agreement tick, stores timestamp, IP, user agent and a SHA-256 of the agreement text+version; downloadable PDF certificate (a *simple* electronic signature — legal sufficiency varies by jurisdiction).
+**Automation engine**: 8 triggers (job created, message received, conversation stale, proposal stage changed / stale, order status changed, payment received, form submitted), AND-conditions with 9 operators, 7 actions (notify with channel override, draft proposal from template or AI, create task, send form link, label, star, set follow-up). Safety: no webhook/outbound-HTTP action (SSRF), actions never fire further triggers (no loops), 50 runs/hour/rule, per-event de-duplication, every run logged, **dry-run test endpoint**, drafts are never auto-approved and client-facing sends on non-API platforms are queued as `pending_manual`. Ships 4 presets mirroring the product brief examples. Celery beat scans for stale conversations/proposals every 10 min.
+**AI assistant**: deterministic daily briefing (unread, clients waiting, deadlines, new matches, follow-ups, overdue invoices) with optional Claude narrative; requirement extraction from text/thread/form submission (JSON-parsed, with a parse-failure fallback); pricing advice combining the bid heuristic with the user's own win rate by price band; grounded chat. Everything AI is labelled `ai_generated`/`requires_approval`. Migration `0007`.
+**Web**: Forms builder (add/reorder fields, options, conditions, signature settings, auto-actions, publish, link/embed copy, submissions view, CSV, certificate PDF), public form renderer, Automations (presets, rule editor, dry-run tester, run log), Assistant slide-over (briefing, extract, chat).
+
+**Caveats**: file storage is local disk (use S3/R2 in production); the rule editor takes action parameters as JSON; automation `send_form` needs an existing conversation with the client; AI features need `ANTHROPIC_API_KEY`.
 
 ## Not yet done / known gaps from Phase 1
 - Team members/VA roles: table exists, no invite/permission endpoints yet.

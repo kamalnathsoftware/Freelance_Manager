@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CreditEntry, Job, MasterProfile, PlatformAccount, Proposal, Stage
+from app.services import automation
 from app.services.matching import matched_skills
 
 VAR_RE = re.compile(r"\{(\w+)\}")
@@ -49,6 +50,12 @@ async def move(db: AsyncSession, p: Proposal, stage: Stage, lost_reason: str = "
         p.lost_reason = lost_reason
     if p.stage != stage:
         p.stage, p.stage_changed_at = stage, datetime.now(UTC)
+        job = await db.get(Job, p.job_id)
+        await automation.fire(
+            db, p.user_id, "proposal.stage_changed",
+            {"proposal_id": str(p.id), "stage": stage.value, "job_title": job.title if job else "", "platform": job.platform if job else ""},
+            dedupe_key=f"pstage:{p.id}:{stage.value}:{p.stage_changed_at.isoformat()}",
+        )  # fmt: skip
         top = (
             await db.execute(
                 select(func.max(Proposal.position)).where(

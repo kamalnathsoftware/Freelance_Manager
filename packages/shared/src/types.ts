@@ -123,3 +123,17 @@ export interface EarningsReport {
 }
 export interface FinanceSummary { currency: string; month: EarningsReport["totals"]; outstanding_invoices: number; overdue_invoices: number; tax_set_aside: number; monthly_income_goal: number; goal_progress: number | null }
 export interface CalendarItem { id: string; kind: string; title: string; start: string; end: string | null; all_day: boolean; href: string }
+
+export type FieldType = "text" | "textarea" | "email" | "number" | "dropdown" | "radio" | "checkbox" | "date" | "file" | "rating" | "agreement";
+export interface FormFieldDef { key: string; type: FieldType; label: string; help_text?: string; required: boolean; options: string[]; show_if: { field: string; op: string; value?: unknown } | null }
+export interface FormDef {
+  id: string; public_key: string; title: string; description: string; kind: string; published: boolean; settings: Record<string, unknown>;
+  version: number; fields: FormFieldDef[]; public_url: string; embed_snippet: string; submission_count: number;
+}
+export interface FormSubmission { id: string; form_id: string; submitter_name: string; submitter_email: string; answers: Record<string, unknown>; signature: Record<string, unknown> | null; result: Record<string, unknown>; created_at: string }
+export interface PublicForm { title: string; description: string; kind: string; version: number; agreement_text: string; requires_signature: boolean; fields: FormFieldDef[] }
+export interface AutomationRule { id: string; name: string; enabled: boolean; trigger: string; conditions: { field: string; op: string; value?: unknown }[]; actions: { type: string; params?: Record<string, unknown> }[]; run_count: number; last_run_at: string | null }
+export interface AutomationMeta { triggers: { key: string; label: string }[]; operators: string[]; actions: string[]; presets: (Omit<AutomationRule, "id" | "enabled" | "run_count" | "last_run_at"> & { key: string })[] }
+export interface AutomationRun { id: string; rule_id: string; trigger: string; status: string; log: string[]; created_at: string }
+export interface Briefing { headline: string; facts: Record<string, unknown>; narrative: { text: string } | null }
+export interface Requirements { summary: string; requirements: string[]; deliverables: string[]; deadline: string | null; budget: string | null; open_questions: string[] }
