@@ -20,6 +20,7 @@ from app.models import (
     SavedSearch,
     Stage,
 )
+from app.services import inbox
 from app.services.email_parser import ParsedEmail
 from app.services.matching import score_job
 
@@ -134,6 +135,8 @@ async def record_event(db: AsyncSession, user_id: uuid.UUID, *, platform: str, k
     ev = PlatformEvent(user_id=user_id, account_id=acc.id if acc else None, platform=platform, kind=kind, title=title,
                        summary=summary, url=url, source=source, dedupe_key=dedupe_key, meta=meta or {})  # fmt: skip
     db.add(ev)
+    if kind == "message":
+        await route_message_event(db, user_id, ev)
     if acc is not None and kind in ("message", "order", "offer"):
         stats = dict(acc.stats or {})
         field = {"message": "unread", "order": "active_orders", "offer": "pending_bids"}[kind]
@@ -182,3 +185,22 @@ async def resolve_api_key(db: AsyncSession, raw: str) -> ApiKey | None:
         return None
     key.last_used_at = datetime.now(UTC)
     return key
+
+
+async def route_message_event(db: AsyncSession, user_id: uuid.UUID, ev: PlatformEvent) -> None:
+    """Every inbound platform message becomes (part of) a conversation in the unified inbox."""
+    who = str(ev.meta.get("counterparty") or "").strip()
+    handle = who or ev.url or ev.title
+    client = await inbox.resolve_client(db, user_id, ev.platform, handle, name=who)
+    key = (f"{who.lower()}" if who else ev.url or ev.title)[:200]
+    conv, _ = await inbox.get_or_create_conversation(
+        db, user_id, ev.platform, key, subject=ev.title, client=client, platform_url=ev.url
+    )
+    await inbox.add_inbound(
+        db,
+        conv,
+        ev.summary or ev.title,
+        sender=who,
+        source=ev.source,
+        external_key=ev.dedupe_key[:100],
+    )

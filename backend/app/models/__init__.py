@@ -1,3 +1,13 @@
+from app.models.inbox import (
+    Attachment,
+    CannedResponse,
+    ChatWidget,
+    Client,
+    ClientIdentity,
+    Conversation,
+    ConvStatus,
+    Message,
+)
 from app.models.jobs import (
     ApiKey,
     CreditEntry,
@@ -26,6 +36,14 @@ from app.models.platform import (
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
 
 __all__ = [
+    "Attachment",
+    "CannedResponse",
+    "ChatWidget",
+    "Client",
+    "ClientIdentity",
+    "ConvStatus",
+    "Conversation",
+    "Message",
     "ApiKey",
     "CreditEntry",
     "Job",

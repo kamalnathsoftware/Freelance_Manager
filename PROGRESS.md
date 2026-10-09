@@ -5,8 +5,8 @@
 | 1 | Foundation: monorepo, Docker, CI, auth, settings, design system, app shells, API client | ✅ Done |
 | 2 | Platform hub, profiles, gigs, AI rewrite | ✅ Done |
 | 3 | Jobs, proposals, pipeline, browser extension, email ingestion | ✅ Done |
-| 4 | Unified inbox, real-time, CRM | ⏳ Next |
-| 5 | Notifications (in-app, push, email, WhatsApp, …) | ⏳ |
+| 4 | Unified inbox, real-time, CRM | ✅ Done |
+| 5 | Notifications (in-app, push, email, WhatsApp, …) | ⏳ Next |
 | 6 | Orders, projects, time, invoices, finance | ⏳ |
 | 7 | Forms builder, automation rules, AI assistant | ⏳ |
 | 8 | Analytics, goals, polish, a11y, docs | ⏳ |
@@ -37,6 +37,14 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 **Web**: Jobs inbox (filters, match %, shortlist→builder), Pipeline kanban (drag-and-drop + keyboard select), Proposal builder (templates, AI draft, approve, assisted submit), API-key management in Settings.
 
 **Limitations**: email patterns are heuristic and need tuning against real notification emails; Gmail poll is on-demand (no Pub/Sub push or Celery schedule yet); no Gmail token refresh; Upwork/Freelancer job feeds (`fetch_jobs`) are not implemented; the extension has no icons and uses generic page parsing.
+
+## Phase 4 — what exists
+
+**Backend** (58 tests, ~96% coverage): every inbound platform message (parsed email, extension capture, manual paste, chat widget) becomes a `Conversation`/`Message` with an auto-resolved `Client` identity. Threads: unread counts per platform, labels, star, snooze (auto-reopen when due or on a new message), archive, assign (self or team member), search (including message bodies). Replies: sent through the API only where an adapter supports it (direct clients today); otherwise stored `pending_manual` with a "reply on platform" deep link until the user confirms — idempotent via `idempotency_key`. **Response-time tracking** per platform and **SLA alerts** ("client waiting 20 min", VIPs first, threshold in user settings). AI suggest-reply / summary / translate / tone-check — all labelled; sending an AI draft needs `approved=true`. Quick replies. CRM: clients with merged platform identities, tags, VIP, notes, LTV, repeat-client flag, merge, history, create-from-job. Global search endpoint. WebSocket `/api/v1/ws?token=` (ready/ping/message.new/conversation.updated). Embeddable chat widget for the user's own site (per-visitor secret token, CORS open only on `/public/*`, no cookies). Alembic `0004` (batch mode so it also runs on SQLite).
+**Web**: two-pane Inbox (filters, unread badges in the sidebar, live updates + toasts, assisted-send flow, AI draft badge, SLA banner), Clients (VIP, merge), command palette now searches clients/messages/jobs/gigs. `public/widget.js` embed script.
+**Mobile**: Inbox tab with swipe snooze/archive, pull-to-refresh, offline cache + "offline" banner, conversation screen, replies queued offline and flushed with idempotency keys.
+
+**Limitations**: WebSocket hub is in-process (needs a Redis bridge for >1 API replica); the chat widget polls every 5 s; attachments are stored as URLs (no upload/storage service yet — needs S3/R2 in a later phase); translation/tone/summary need `ANTHROPIC_API_KEY`; migrations are verified on SQLite only (Postgres run recommended in CI); team-member invites/permissions are still not implemented (assignee check already honours `TeamMember`).
 
 ## Not yet done / known gaps from Phase 1
 - Team members/VA roles: table exists, no invite/permission endpoints yet.

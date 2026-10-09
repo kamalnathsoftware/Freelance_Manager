@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -38,6 +38,24 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     install_error_handlers(app)
+
+    @app.middleware("http")
+    async def public_cors(request: Request, call_next):  # type: ignore[no-untyped-def]
+        # The embeddable chat widget runs on arbitrary customer sites: allow any origin, but only on
+        # /public/* and never with credentials (it authenticates with a per-visitor token header).
+        if request.url.path.startswith("/api/v1/public/"):
+            headers = {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type, X-Visitor-Token",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            }
+            if request.method == "OPTIONS":
+                return Response(status_code=204, headers=headers)
+            response = await call_next(request)
+            response.headers.update(headers)
+            return response
+        return await call_next(request)
+
     app.include_router(v1_router)
 
     @app.get("/health", tags=["ops"])

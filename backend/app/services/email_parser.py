@@ -119,6 +119,29 @@ def _first_platform_url(platform: str, body: str) -> str:
     return ""
 
 
+NAME = r"([A-Z][\w.'-]+(?: [A-Z][\w.'-]+)?)"
+NOT_NAMES = {
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "January", "February", "March", "April",
+    "May", "June", "July", "August", "September", "October", "November", "December", "Fiverr", "Upwork", "Freelancer", "You", "The",
+}  # fmt: skip
+
+
+def counterparty(subject: str, body: str) -> str:
+    """Best-effort name of the other person. Subject patterns first; body only as a labelled fallback."""
+    candidates = [
+        re.search(rf"\b(?:from|by)\s+{NAME}", subject),
+        re.search(
+            rf"^{NAME}\s+(?:sent|invited|messaged|replied|left|accepted|declined|viewed|requested)",
+            subject.strip(),
+        ),
+        re.search(rf"\b(?:from|sender|client|buyer)\s*:\s*{NAME}", body[:400], re.I),
+    ]
+    for m in candidates:
+        if m and m.group(1).split()[0] not in NOT_NAMES:
+            return m.group(1)
+    return ""
+
+
 def parse_email(sender: str, subject: str, body: str, message_id: str = "") -> ParsedEmail | None:
     platform = platform_for(sender)
     if platform is None:
@@ -127,10 +150,8 @@ def parse_email(sender: str, subject: str, body: str, message_id: str = "") -> P
     if kind is None:
         return None
     meta: dict[str, Any] = {}
-    if m := re.search(
-        r"(?:from|by)\s+([A-Z][\w.'-]+(?: [A-Z][\w.'-]+)?)", subject + " " + body[:300]
-    ):
-        meta["counterparty"] = m.group(1)
+    if who := counterparty(subject, body):
+        meta["counterparty"] = who
     if m := re.search(r"(?:order\s*#|order id:?\s*)(\w{4,})", subject + " " + body, re.I):
         meta["order_id"] = m.group(1)
     if m := re.search(r"([$€£])\s?(\d[\d,]*(?:\.\d{1,2})?)", subject + " " + body[:800]):

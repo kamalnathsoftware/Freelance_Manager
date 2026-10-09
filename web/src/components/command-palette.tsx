@@ -2,6 +2,8 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { NAV } from "./nav";
 
 export function CommandPalette() {
@@ -21,7 +23,10 @@ export function CommandPalette() {
   }, []);
   useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(() => input.current?.focus(), 0); } }, [open]);
 
-  const results = useMemo(() => NAV.filter((n) => n.label.toLowerCase().includes(q.toLowerCase())), [q]);
+  const pages = useMemo(() => NAV.filter((n) => n.label.toLowerCase().includes(q.toLowerCase())).map((n) => ({ href: n.href, label: n.label, icon: n.icon as typeof Search, group: "Pages" })), [q]);
+  const found = useQuery({ queryKey: ["search", q], queryFn: () => api.search(q), enabled: open && q.trim().length >= 2 });
+  const hits = Object.entries(found.data ?? {}).flatMap(([group, items]) => items.map((i) => ({ href: i.href, label: `${i.title}${i.subtitle ? ` - ${i.subtitle}` : ""}`, icon: Search, group })));
+  const results = [...pages, ...hits];
   const go = (href: string) => { setOpen(false); router.push(href); };
 
   return (
@@ -44,9 +49,9 @@ export function CommandPalette() {
             />
             <ul className="max-h-72 overflow-auto p-2">
               {results.map((r, i) => (
-                <li key={r.href}>
+                <li key={`${r.group}-${r.href}-${i}`}>
                   <button onClick={() => go(r.href)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm ${i === idx ? "bg-border/60" : ""}`}>
-                    <r.icon size={16} /> {r.label}
+                    <r.icon size={16} /> <span className="truncate">{r.label}</span><span className="ml-auto text-xs capitalize text-muted">{r.group}</span>
                   </button>
                 </li>
               ))}

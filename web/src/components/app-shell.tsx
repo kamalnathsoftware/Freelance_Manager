@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, hasSession } from "@/lib/api";
+import { useRealtime } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
 import { NAV } from "./nav";
@@ -20,6 +21,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!hasSession()) router.replace("/login"); else setReady(true);
   }, [router]);
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, enabled: ready });
+  useRealtime(ready);
+  const unread = useQuery({ queryKey: ["unread"], queryFn: api.unreadCounts, enabled: ready, refetchInterval: 60_000 });
   if (!ready) return null;
 
   return (
@@ -38,6 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link key={n.href} href={n.href} title={n.label} aria-current={active ? "page" : undefined}
                 className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-border/50", active && "bg-brand/10 font-medium text-brand")}>
                 <n.icon size={18} /> {!collapsed && n.label}
+                {n.href === "/inbox" && !!unread.data?.total && <span aria-label={`${unread.data.total} unread`} className="ml-auto rounded-full bg-brand px-1.5 text-xs text-brand-fg">{unread.data.total}</span>}
               </Link>
             );
           })}

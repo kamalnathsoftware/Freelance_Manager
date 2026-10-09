@@ -58,6 +58,9 @@ class Job(Base):
     score: Mapped[int] = mapped_column(Integer, default=0, index=True)
     score_reasons: Mapped[list] = mapped_column(JSON, default=list)
     dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("clients.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

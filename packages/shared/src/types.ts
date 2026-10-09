@@ -66,3 +66,26 @@ export interface ProposalAnalytics {
   by_price_band: { key: string; submitted: number; won: number; win_rate: number }[];
   by_hour: { key: string; submitted: number; won: number; win_rate: number }[];
 }
+
+export type ConvStatus = "open" | "snoozed" | "archived";
+export interface Conversation {
+  id: string; platform: string; subject: string; platform_url: string; client_id: string | null; status: ConvStatus;
+  starred: boolean; labels: string[]; assignee_id: string | null; snoozed_until: string | null; unread_count: number;
+  last_message_at: string; last_preview: string; awaiting_reply_since: string | null; client_name: string; client_vip: boolean;
+}
+export interface ChatMessage {
+  id: string; direction: "in" | "out"; sender_name: string; body: string; source: string;
+  delivery: "sent" | "pending_manual" | "failed"; ai_generated: boolean; response_seconds: number | null; created_at: string;
+  attachments: { filename: string; url: string; content_type?: string; size?: number }[];
+}
+export interface SendResult { message: ChatMessage; duplicate: boolean; requires_manual_paste: boolean; reply_on_platform_url: string | null }
+export interface SlaAlerts { sla_minutes: number; alerts: { conversation_id: string; platform: string; subject: string; waiting_minutes: number; vip: boolean }[] }
+export interface CannedResponse { id: string; shortcut: string; body: string }
+export interface Client {
+  id: string; name: string; email: string; company: string; country: string; timezone: string; notes: string; tags: string[];
+  vip: boolean; total_earned: number; completed_orders: number; identities: { id: string; platform: string; handle: string }[];
+  lifetime_value: number; repeat_client: boolean; won_proposals: number;
+}
+export type ClientInput = Omit<Client, "id" | "identities" | "lifetime_value" | "repeat_client" | "won_proposals">;
+export interface SearchResults { [group: string]: { id: string; title: string; subtitle: string; href: string }[] }
+export interface RealtimeEvent { event: string; data: Record<string, unknown> }

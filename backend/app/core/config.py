@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     refresh_token_days: int = 30
     cors_origins: list[str] = ["http://localhost:3000"]
     web_base_url: str = "http://localhost:3000"
+    public_api_url: str = "http://localhost:8000"
 
     smtp_host: str = "localhost"
     smtp_port: int = 1025

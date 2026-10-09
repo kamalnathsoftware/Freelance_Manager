@@ -12,7 +12,12 @@ url = get_settings().database_url
 
 
 def _run(connection) -> None:  # type: ignore[no-untyped-def]
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        render_as_batch=True,  # SQLite (tests/dev) cannot ALTER constraints; no-op on Postgres
+    )
     with context.begin_transaction():
         context.run_migrations()
 

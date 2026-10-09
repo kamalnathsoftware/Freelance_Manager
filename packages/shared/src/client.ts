@@ -1,7 +1,7 @@
 import type {
-  ApiErrorBody, ApiKeyInfo, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
-  PlatformEvent, PlatformProfile, Proposal, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
-  Suggestion, SyncLog, TokenPair, User,
+  ApiErrorBody, ApiKeyInfo, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
+  RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
 
 export class ApiError extends Error {
@@ -157,4 +157,51 @@ export class ApiClient {
   gmailAuthUrl = () => this.request<{ url: string }>("/ingest/gmail/auth-url");
   gmailConnect = (code: string) => this.post("/ingest/gmail/connect", { code });
   gmailPoll = () => this.post<{ seen: number; ingested: number }>("/ingest/gmail/poll");
+
+  // inbox
+  conversations = (q: { status?: ConvStatus; platform?: string; unread?: boolean; starred?: boolean; q?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined && v !== "" && v !== false).map(([k, v]) => [k, String(v)])).toString();
+    return this.request<Conversation[]>(`/conversations${qs ? `?${qs}` : ""}`);
+  };
+  unreadCounts = () => this.request<{ total: number; by_platform: Record<string, number> }>("/conversations/unread-counts");
+  slaAlerts = () => this.request<SlaAlerts>("/conversations/sla-alerts");
+  messages = (id: string) => this.request<ChatMessage[]>(`/conversations/${id}/messages`);
+  patchConversation = (id: string, b: { starred?: boolean; labels?: string[]; status?: ConvStatus; snooze_minutes?: number }) =>
+    this.request<Conversation>(`/conversations/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+  newConversation = (b: { platform: string; subject: string; client_name?: string; body?: string; platform_url?: string }) => this.post<Conversation>("/conversations", b);
+  sendMessage = (id: string, b: { body: string; idempotency_key?: string; ai_generated?: boolean; approved?: boolean }) =>
+    this.post<SendResult>(`/conversations/${id}/messages`, b);
+  confirmSent = (messageId: string) => this.post<ChatMessage>(`/messages/${messageId}/confirm-sent`);
+  suggestReply = (id: string, tone = "professional") => this.post<Suggestion>(`/conversations/${id}/suggest-reply?tone=${tone}`);
+  summarize = (id: string) => this.post<Suggestion>(`/conversations/${id}/summary`);
+  translate = (text: string, target_language = "English") => this.post<Suggestion>("/ai/translate", { text, target_language });
+  canned = () => this.request<CannedResponse[]>("/canned-responses");
+  addCanned = (b: { shortcut: string; body: string }) => this.post<CannedResponse>("/canned-responses", b);
+
+  // CRM & search
+  clients = (q?: string) => this.request<Client[]>(`/clients${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  createClient = (b: Partial<ClientInput> & { name: string }) => this.post<Client>("/clients", b);
+  updateClient = (id: string, b: ClientInput) => this.request<Client>(`/clients/${id}`, { method: "PUT", body: JSON.stringify(b) });
+  mergeClients = (targetId: string, sourceId: string) => this.post<Client>(`/clients/${targetId}/merge`, { source_id: sourceId });
+  search = (q: string) => this.request<SearchResults>(`/search?q=${encodeURIComponent(q)}`);
+
+  /** Real-time events over WebSocket (message.new, conversation.updated, …). Reconnects with a fresh token. */
+  connectRealtime = (onEvent: (e: RealtimeEvent) => void): (() => void) => {
+    let stop = false;
+    let ws: WebSocket | null = null;
+    let retry = 1000;
+    const open = async () => {
+      const t = await this.store.get();
+      if (stop || !t) return;
+      ws = new WebSocket(`${this.baseUrl.replace(/^http/, "ws")}/api/v1/ws?token=${encodeURIComponent(t.access_token)}`);
+      ws.onmessage = (m) => { retry = 1000; try { onEvent(JSON.parse(m.data) as RealtimeEvent); } catch { /* ignore */ } };
+      ws.onclose = async (ev) => {
+        if (stop) return;
+        if (ev.code === 4401) { try { await this.me(); } catch { return; } } // expired token: any call triggers a refresh
+        setTimeout(open, retry); retry = Math.min(retry * 2, 30_000);
+      };
+    };
+    void open();
+    return () => { stop = true; ws?.close(); };
+  };
 }
