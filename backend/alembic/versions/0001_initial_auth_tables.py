@@ -99,3 +99,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_audit_logs_action"), table_name="audit_logs")
     op.drop_table("audit_logs")
     # ### end Alembic commands ###
+    # Postgres keeps ENUM types after DROP TABLE; drop them so the next upgrade can recreate them.
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS role")

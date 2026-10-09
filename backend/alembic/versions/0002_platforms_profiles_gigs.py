@@ -208,3 +208,8 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_gigs_user_id"), table_name="gigs")
     op.drop_table("gigs")
     # ### end Alembic commands ###
+    # Postgres keeps ENUM types after DROP TABLE; drop them so the next upgrade can recreate them.
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS gigstatus")
+        op.execute("DROP TYPE IF EXISTS integrationmode")
+        op.execute("DROP TYPE IF EXISTS accountstatus")

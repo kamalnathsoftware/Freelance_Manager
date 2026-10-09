@@ -214,3 +214,6 @@ def downgrade() -> None:
 
     op.drop_table("canned_responses")
     # ### end Alembic commands ###
+    # Postgres keeps ENUM types after DROP TABLE; drop them so the next upgrade can recreate them.
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS convstatus")

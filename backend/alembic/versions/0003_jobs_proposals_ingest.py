@@ -221,3 +221,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_api_keys_key_hash"), table_name="api_keys")
     op.drop_table("api_keys")
     # ### end Alembic commands ###
+    # Postgres keeps ENUM types after DROP TABLE; drop them so the next upgrade can recreate them.
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS stage")
