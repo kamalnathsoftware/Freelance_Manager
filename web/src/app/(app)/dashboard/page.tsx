@@ -1,67 +1,65 @@
 "use client";
-import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import { PlatformBadge } from "@/components/platform-badge";
-import { Card, EmptyState } from "@/components/ui/card";
+import { Card, EmptyState, Skeleton } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
-// Placeholder series until the analytics module (phase 8) feeds real data.
-const earnings = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => ({ d, v: [120, 340, 90, 520, 410, 0, 260][i] }));
-const funnel = [
-  { stage: "Found", n: 48 }, { stage: "Proposal", n: 21 }, { stage: "Submitted", n: 14 },
-  { stage: "Interview", n: 6 }, { stage: "Won", n: 3 },
-];
-const kpis = [
-  { label: "Earnings (7d)", value: "$1,740" }, { label: "Unread messages", value: "0" },
-  { label: "Active orders", value: "0" }, { label: "Pending bids", value: "0" },
-];
+const EarningsChart = dynamic(() => import("@/components/charts").then((m) => m.EarningsChart), { ssr: false, loading: () => <Skeleton className="h-64" /> });
+const FunnelChart = dynamic(() => import("@/components/charts").then((m) => m.FunnelChart), { ssr: false, loading: () => <Skeleton className="h-64" /> });
+const Sparkline = dynamic(() => import("@/components/charts").then((m) => m.Sparkline), { ssr: false });
+
+const money = (n: number, c: string) => new Intl.NumberFormat(undefined, { style: "currency", currency: c, maximumFractionDigits: 0 }).format(n);
 
 export default function Dashboard() {
+  const { t } = useT();
+  const ov = useQuery({ queryKey: ["analytics", 30], queryFn: () => api.analytics(30) });
+  const brief = useQuery({ queryKey: ["briefing", false], queryFn: () => api.briefing(false) });
+  const accounts = useQuery({ queryKey: ["accounts"], queryFn: api.accounts });
+  const d = ov.data;
+  const k = d?.kpis;
+  const cards = [
+    { label: t("dash.net"), value: k ? money(k.net_earnings, d!.currency) : "", sub: k?.change_pct != null ? `${k.change_pct >= 0 ? "▲" : "▼"} ${Math.abs(k.change_pct)}% vs previous` : "" },
+    { label: t("dash.winrate"), value: k ? `${Math.round(k.win_rate * 100)}%` : "", sub: k ? `${k.proposals_submitted} proposals` : "" },
+    { label: t("dash.pipeline"), value: k ? money(k.open_pipeline_value, d!.currency) : "", sub: "" },
+    { label: t("dash.orders"), value: k ? String(k.active_orders) : "", sub: k?.avg_response_minutes != null ? `avg reply ${k.avg_response_minutes} min` : "" },
+  ];
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold">{t("dash.title")}</h1>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpis.map((k, i) => (
-          <motion.div key={k.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+        {cards.map((c, i) => (
+          <motion.div key={c.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card>
-              <p className="text-sm text-muted">{k.label}</p>
-              <p className="mt-1 text-2xl font-bold">{k.value}</p>
-              <div className="mt-2 h-8" aria-hidden>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={earnings}><Area dataKey="v" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.15)" strokeWidth={2} /></AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <p className="text-sm text-muted">{c.label}</p>
+              {ov.isLoading ? <Skeleton className="mt-2 h-8 w-24" /> : <p className="mt-1 text-2xl font-bold">{c.value}</p>}
+              <p className="text-xs text-muted">{c.sub}</p>
+              {i === 0 && d && <Sparkline data={d.earnings_series} />}
             </Card>
           </motion.div>
         ))}
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Earnings</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={earnings}>
-                <XAxis dataKey="d" stroke="hsl(var(--muted))" fontSize={12} /><YAxis stroke="hsl(var(--muted))" fontSize={12} />
-                <Tooltip /><Area dataKey="v" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.2)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Earnings (30 days)</h2><Link href="/analytics" className="text-sm text-brand">Full analytics →</Link></div>
+          {d ? <EarningsChart data={d.earnings_series} currency={d.currency} /> : <Skeleton className="h-64" />}
         </Card>
-        <Card>
-          <h2 className="mb-3 font-semibold">Today</h2>
-          <EmptyState title="Nothing yet" hint="Connect a platform to see messages, deadlines and matching jobs here." />
-          <div className="mt-3 flex flex-wrap gap-2">{["upwork", "fiverr", "freelancer"].map((p) => <PlatformBadge key={p} platform={p} />)}</div>
+        <Card className="space-y-3">
+          <h2 className="font-semibold">{t("dash.today")}</h2>
+          <p className="text-sm">{brief.data?.headline ?? <Skeleton className="h-5" />}</p>
+          {d?.upcoming_deadlines.length === 0 && !brief.isLoading && <EmptyState title="No deadlines this week" hint="Orders, tasks and invoices with due dates show up here." />}
+          <ul className="space-y-1.5 text-sm">
+            {d?.upcoming_deadlines.slice(0, 5).map((x) => <li key={x.title + x.at}><Link href={x.href} className="hover:text-brand">{x.title}</Link> <span className="text-xs text-muted">{new Date(x.at).toLocaleDateString()}</span></li>)}
+          </ul>
+          <div className="flex flex-wrap gap-2">{accounts.data?.map((a) => <PlatformBadge key={a.id} platform={a.platform} />)}</div>
         </Card>
       </div>
       <Card>
-        <h2 className="mb-3 font-semibold">Pipeline funnel</h2>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={funnel} layout="vertical">
-              <XAxis type="number" hide /><YAxis type="category" dataKey="stage" stroke="hsl(var(--muted))" fontSize={12} width={80} />
-              <Tooltip /><Bar dataKey="n" fill="hsl(var(--brand))" radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <h2 className="mb-3 font-semibold">Proposal funnel</h2>
+        {d ? <FunnelChart data={d.funnel} /> : <Skeleton className="h-64" />}
       </Card>
     </div>
   );

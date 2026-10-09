@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { NAV } from "./nav";
 
 export function CommandPalette() {
@@ -11,6 +12,7 @@ export function CommandPalette() {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const router = useRouter();
+  const { t } = useT();
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function CommandPalette() {
   }, []);
   useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(() => input.current?.focus(), 0); } }, [open]);
 
-  const pages = useMemo(() => NAV.filter((n) => n.label.toLowerCase().includes(q.toLowerCase())).map((n) => ({ href: n.href, label: n.label, icon: n.icon as typeof Search, group: "Pages" })), [q]);
+  const pages = useMemo(() => NAV.filter((n) => t(n.key).toLowerCase().includes(q.toLowerCase())).map((n) => ({ href: n.href, label: t(n.key), icon: n.icon as typeof Search, group: "Pages" })), [q, t]);
   const found = useQuery({ queryKey: ["search", q], queryFn: () => api.search(q), enabled: open && q.trim().length >= 2 });
   const hits = Object.entries(found.data ?? {}).flatMap(([group, items]) => items.map((i) => ({ href: i.href, label: `${i.title}${i.subtitle ? ` - ${i.subtitle}` : ""}`, icon: Search, group })));
   const results = [...pages, ...hits];

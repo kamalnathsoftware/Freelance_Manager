@@ -31,3 +31,23 @@ describe("ApiClient", () => {
     expect(out).toHaveBeenCalled();
   });
 });
+
+describe("ApiClient workspaces", () => {
+  const store = { get: () => ({ access_token: "a", refresh_token: "r", token_type: "bearer" }), set: () => {} };
+  it("sends X-Workspace for workspace data but never for account/team calls", async () => {
+    const seen: Record<string, string | undefined> = {};
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      seen[url.split("/api/v1")[1]] = (init.headers as Record<string, string>)["X-Workspace"];
+      return json([]);
+    }));
+    const api = new ApiClient("http://x", store, undefined, () => "owner-123");
+    await api.jobs();
+    await api.me();
+    await api.team();
+    await api.workspaces();
+    expect(seen["/jobs"]).toBe("owner-123");
+    expect(seen["/me"]).toBeUndefined();
+    expect(seen["/team"]).toBeUndefined();
+    expect(seen["/me/workspaces"]).toBeUndefined();
+  });
+});

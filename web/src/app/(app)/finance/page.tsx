@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@fm/shared";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { download } from "@/lib/download";
 import { cn } from "@/lib/utils";
+
+const NetFeeBars = dynamic(() => import("@/components/charts").then((m) => m.NetFeeBars), { ssr: false, loading: () => <div className="h-64" /> });
 
 const TABS = ["overview", "invoices", "expenses", "payments", "fees"] as const;
 type Tab = (typeof TABS)[number];
@@ -54,7 +56,7 @@ export default function Finance() {
             <div className="flex gap-2"><select aria-label="Group by" value={group} onChange={(e) => setGroup(e.target.value as typeof group)} className="h-8 rounded-xl border border-border bg-card px-2 text-sm"><option value="month">by month</option><option value="platform">by platform</option><option value="client">by client</option></select>
               <Button size="sm" variant="outline" onClick={() => download(`/finance/report.csv?group_by=${group}`, "earnings.csv")}>Export CSV</Button></div></div>
           {report.data?.rows.length === 0 ? <EmptyState title="No payments yet" hint="Record a payment or complete an order to see earnings here." /> : (
-            <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={report.data?.rows}><XAxis dataKey="key" stroke="hsl(var(--muted))" fontSize={12} /><YAxis stroke="hsl(var(--muted))" fontSize={12} /><Tooltip /><Bar dataKey="net" name="Net" fill="hsl(var(--brand))" radius={[6, 6, 0, 0]} /><Bar dataKey="fee" name="Fees" fill="hsl(var(--muted))" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>)}
+            <NetFeeBars data={report.data?.rows ?? []} />)}
           {report.data && <p className="text-sm text-muted">Gross {money(report.data.totals.gross, cur)} · fees {money(report.data.totals.fees, cur)} · expenses {money(report.data.totals.expenses, cur)} · <strong>profit {money(report.data.totals.profit, cur)}</strong></p>}
           {!!report.data?.missing_fx_rates.length && <p role="alert" className="text-xs text-danger">No exchange rate for {report.data.missing_fx_rates.join(", ")} - those amounts are counted 1:1. Set rates in settings.fx.</p>}
           {report.data && <p className="text-xs text-muted">Tax estimate ({report.data.tax.rate_pct}%): {money(report.data.tax.estimated_tax, cur)}. {report.data.tax.disclaimer}</p>}

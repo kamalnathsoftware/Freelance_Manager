@@ -5,17 +5,20 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, hasSession } from "@/lib/api";
+import { useT, LOCALES, type Locale } from "@/lib/i18n";
 import { useRealtime } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
 import { NAV } from "./nav";
 import { AssistantPanel } from "./assistant-panel";
 import { NotificationBell } from "./notification-bell";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const { t, locale, setLocale } = useT();
   const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -40,9 +43,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {NAV.map((n) => {
             const active = pathname.startsWith(n.href);
             return (
-              <Link key={n.href} href={n.href} title={n.label} aria-current={active ? "page" : undefined}
+              <Link key={n.href} href={n.href} title={t(n.key)} aria-current={active ? "page" : undefined}
                 className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-border/50", active && "bg-brand/10 font-medium text-brand")}>
-                <n.icon size={18} /> {!collapsed && n.label}
+                <n.icon size={18} /> {!collapsed && t(n.key)}
                 {n.href === "/inbox" && !!unread.data?.total && <span aria-label={`${unread.data.total} unread`} className="ml-auto rounded-full bg-brand px-1.5 text-xs text-brand-fg">{unread.data.total}</span>}
               </Link>
             );
@@ -53,11 +56,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur">
           <CommandPalette />
           <div className="ml-auto flex items-center gap-1">
+            <WorkspaceSwitcher enabled={ready} />
+            <label htmlFor="lang" className="sr-only">Language</label>
+            <select id="lang" value={locale} onChange={(e) => setLocale(e.target.value as Locale)} className="h-9 rounded-xl border border-border bg-card px-1 text-sm">{LOCALES.map((l) => <option key={l.code} value={l.code}>{l.code.toUpperCase()}</option>)}</select>
             <AssistantPanel />
             <NotificationBell enabled={ready} />
             <ThemeToggle />
             <span className="hidden px-2 text-sm text-muted sm:inline">{me.data?.full_name || me.data?.email}</span>
-            <Button variant="ghost" size="sm" aria-label="Log out" onClick={async () => { await api.logout(); router.replace("/login"); }}>
+            <Button variant="ghost" size="sm" aria-label={t("common.logout")} onClick={async () => { await api.logout(); router.replace("/login"); }}>
               <LogOut size={16} />
             </Button>
           </div>

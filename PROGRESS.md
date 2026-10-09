@@ -9,7 +9,7 @@
 | 5 | Notifications (in-app, push, email, WhatsApp, …) | ✅ Done |
 | 6 | Orders, projects, time, invoices, finance | ✅ Done |
 | 7 | Forms builder, automation rules, AI assistant | ✅ Done |
-| 8 | Analytics, goals, polish, a11y, docs | ⏳ Next |
+| 8 | Analytics, goals, team roles, GDPR, ops, seed, e2e/a11y, docs | ✅ Done |
 
 ## Phase 1 — what exists
 
@@ -71,9 +71,51 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 
 **Caveats**: file storage is local disk (use S3/R2 in production); the rule editor takes action parameters as JSON; automation `send_form` needs an existing conversation with the client; AI features need `ANTHROPIC_API_KEY`.
 
-## Not yet done / known gaps from Phase 1
-- Team members/VA roles: table exists, no invite/permission endpoints yet.
-- Web push, Storybook, Playwright smoke tests, WebSocket channel: planned for later phases.
-- Web stores tokens in localStorage; a cookie-based BFF is recommended before production.
-- Rate limiter is in-process; move to Redis for multi-replica deployments.
-- Dashboard numbers are placeholders until the analytics phase.
+## Phase 8 — what exists
+
+**Team & workspaces:** invite a VA by email (signed 7-day link, must sign in with that address), roles `full` / `messaging_only` / `view_only`, `X-Workspace` header + workspace switcher in the web top bar. One permission matrix (`api/deps.member_allowed`) — account, security, credentials, API keys, Gmail/Calendar OAuth, contact details and team management are blocked for every member. Role changes/removal apply immediately; every member write lands in the owner's audit log; WebSocket supports `?workspace=`.
+**Analytics & goals:** `/analytics/overview` (earnings by day/week/month with period-over-period change, by platform, top clients, proposal funnel, win rate by platform/template/price band/hour, response times, utilization vs weekly capacity, upcoming deadlines), `/goals` (monthly/yearly income + weekly hours, pace status, forecast = run-rate / + committed orders net of fees / + stage-weighted pipeline with stated assumptions), branded one-page **PDF report**, CSV export. Dashboard now uses real data (charts lazy-loaded: dashboard first-load JS 243 kB → 166 kB).
+**GDPR:** full export (30+ tables, no credential secrets, decrypted contact details) and erasure that removes every row (FK cascades verified by a test that checks all `user_id` tables) and uploaded files.
+**Ops:** `/ops` job dashboard (admin emails only), gzip, structured logs, Sentry hook, Celery beat for all schedules; `docs/OPERATIONS.md` (backups, restore, key custody, upgrade, security checklist); production compose + Caddy (auto-HTTPS).
+**Seed data:** `python -m app.seed` builds a coherent demo workspace (6 months of payments, pipeline in every stage, conversations, orders with milestones, time entries, invoices, forms with submissions, automations…). A test asserts every list screen is non-empty.
+**Quality:** Playwright e2e (11 flows) + **axe WCAG 2.0/2.1 A/AA scans of 20+ pages in light and dark** — fixed real issues (muted/brand/danger/success text contrast with separate text tokens, tablist semantics, link-in-text, chart tooltip contrast). i18n (EN/ES, parity test), `/design-system` living style guide (Storybook equivalent), mobile Jest tests, CI jobs for backend, Postgres migrations, web, mobile, e2e.
+
+---
+
+# Final summary
+
+## Verified in this environment
+| Area | Evidence |
+|---|---|
+| Backend | 149 pytest tests, **96% coverage**, ruff + mypy clean, FK cascades enforced, tenant-isolation tests per module |
+| Migrations | 7 revisions; up/down/`alembic check` on SQLite locally. **Postgres run is in CI** (`migrations-postgres` job) — I could not run Postgres/Docker here |
+| Web | typecheck, ESLint, 8 Vitest tests, production build, **19 Playwright tests** (flows + axe in both themes) against the real API |
+| Mobile | typecheck + 4 Jest tests. **Never run on a device/simulator** |
+| Extension | manifest/JS syntax-checked; not loaded in Chrome here |
+| Compose | both compose files parse (`docker compose config`); **images were never built or started** (no Docker daemon here) |
+
+## Built, but only tested against mocks (needs your credentials/accounts to prove live)
+Gmail polling & OAuth, Google Calendar sync, WhatsApp Cloud API / Twilio / Telegram / Expo / Web Push sending and webhooks, Claude API features, Freelancer.com profile sync.
+
+## Stubbed pending access
+- **Upwork API** (profile sync, job feed, proposal submit): adapter is wired and degrades to the assisted flow; needs Upwork-approved API keys and implementing the GraphQL calls.
+- Job feeds (`fetch_jobs`) for Upwork/Freelancer — jobs currently arrive via email, extension, manual entry and forms.
+
+## Known limitations / honest caveats
+- Email-parsing patterns are heuristic: tune with your real notification emails.
+- WebSocket hub and rate limiter are in-process (single API replica) — bridge to Redis before scaling out.
+- Web stores tokens in `localStorage`; a cookie-based BFF + CSP is recommended before public launch.
+- File storage is local disk; move to S3/R2 for multi-node.
+- Platform fee schedules and per-platform field limits are defaults to verify; FX rates are manual; the tax estimate is a flat-rate aid, not advice; the proposal funnel is approximate (no stage history).
+- Invoices aren't emailed to clients yet (PDF + mark sent); PDF uses Latin-1 core fonts.
+- Mobile: no widgets, no deep-link tests, limited screens (Home, Inbox + thread, Projects/timer, More).
+- Chrome extension uses generic page parsing and has no icons.
+- No load/performance testing beyond bundle-size work; no Storybook proper (see design-system page).
+
+## Recommended next steps
+1. Add real credentials in a staging environment and walk through Gmail, WhatsApp (template approval takes days), Calendar, push — then add fixtures from real emails to the parser tests.
+2. Apply for Upwork API access; implement the GraphQL profile/jobs/proposals calls behind the existing capability flags.
+3. Run the stack on a staging VPS with `docker-compose.prod.yml`; verify backups/restore using `docs/OPERATIONS.md`.
+4. Redis-backed WebSocket hub + rate limiter, S3 storage, cookie-based web auth, email delivery of invoices, stage-history table for exact funnels.
+5. Mobile polish (more screens, EAS builds, push credentials) and a Chrome Web Store package for the extension.
+6. Pen-test / security review before onboarding other people's data.

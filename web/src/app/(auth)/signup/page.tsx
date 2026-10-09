@@ -28,7 +28,7 @@ export default function SignupPage() {
         <Input label="Password" type="password" autoComplete="new-password" error={errors.password?.message} {...register("password")} />
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <Button className="w-full" type="submit" disabled={isSubmitting}>Sign up</Button>
-        <p className="text-center text-sm text-muted">Have an account? <Link href="/login" className="text-brand">Sign in</Link></p>
+        <p className="text-center text-sm text-muted">Have an account? <Link href="/login" className="text-brand underline">Sign in</Link></p>
       </form>
     </Card>
   );

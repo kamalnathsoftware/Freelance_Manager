@@ -1,5 +1,5 @@
 import type {
-  ApiErrorBody, ApiKeyInfo, AutomationMeta, AutomationRule, AutomationRun, Briefing, FormDef, FormSubmission, PublicForm, Requirements, CalendarItem, EarningsReport, Expense, FinanceSummary, Invoice, InvoiceItem, Order, Payment, Project, Task, TimeEntry, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  AnalyticsOverview, ApiErrorBody, ApiKeyInfo, GoalProgress, OpsOverview, TeamMember, Workspace, AutomationMeta, AutomationRule, AutomationRun, Briefing, FormDef, FormSubmission, PublicForm, Requirements, CalendarItem, EarningsReport, Expense, FinanceSummary, Invoice, InvoiceItem, Order, Payment, Project, Task, TimeEntry, AppNotification, ChannelInfo, Delivery, NotificationPrefs, CannedResponse, ChatMessage, Client, ClientInput, ConvStatus, Conversation, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
@@ -18,11 +18,13 @@ export interface TokenStore {
 /** Framework-agnostic API client with transparent refresh-token rotation. Used by web and mobile. */
 export class ApiClient {
   private refreshing: Promise<TokenPair | null> | null = null;
-  constructor(private baseUrl: string, private store: TokenStore, private onLoggedOut?: () => void) {}
+  constructor(private baseUrl: string, private store: TokenStore, private onLoggedOut?: () => void, private getWorkspace?: () => string | null) {}
 
   private async raw(path: string, init: RequestInit, token?: string): Promise<Response> {
     const headers: Record<string, string> = { "Content-Type": "application/json", ...(init.headers as object) };
     if (token) headers.Authorization = `Bearer ${token}`;
+    const ws = /^\/(me|auth|team|api-keys)(\/|\?|$)/.test(path) ? null : this.getWorkspace?.(); // account/team calls always target you
+    if (ws && token) headers["X-Workspace"] = ws; // act inside a workspace you were invited to
     return fetch(`${this.baseUrl}/api/v1${path}`, { ...init, headers });
   }
 
@@ -193,7 +195,7 @@ export class ApiClient {
     const open = async () => {
       const t = await this.store.get();
       if (stop || !t) return;
-      ws = new WebSocket(`${this.baseUrl.replace(/^http/, "ws")}/api/v1/ws?token=${encodeURIComponent(t.access_token)}`);
+      ws = new WebSocket(`${this.baseUrl.replace(/^http/, "ws")}/api/v1/ws?token=${encodeURIComponent(t.access_token)}${this.getWorkspace?.() ? `&workspace=${this.getWorkspace?.()}` : ""}`);
       ws.onmessage = (m) => { retry = 1000; try { onEvent(JSON.parse(m.data) as RealtimeEvent); } catch { /* ignore */ } };
       ws.onclose = async (ev) => {
         if (stop) return;
@@ -254,7 +256,8 @@ export class ApiClient {
   /** Download helper: fetches with auth and returns a Blob (PDF/CSV/ICS). */
   async blob(path: string): Promise<Blob> {
     const t = await this.store.get();
-    const r = await fetch(`${this.baseUrl}/api/v1${path}`, { headers: t ? { Authorization: `Bearer ${t.access_token}` } : {} });
+    const ws = this.getWorkspace?.();
+    const r = await fetch(`${this.baseUrl}/api/v1${path}`, { headers: { ...(t ? { Authorization: `Bearer ${t.access_token}` } : {}), ...(ws ? { "X-Workspace": ws } : {}) } });
     if (!r.ok) throw new ApiError(r.status, "download_failed", r.statusText);
     return r.blob();
   }
@@ -289,4 +292,18 @@ export class ApiClient {
   briefing = (narrative = false) => this.request<Briefing>(`/assistant/briefing${narrative ? "?narrative=true" : ""}`);
   extractRequirements = (b: { text?: string; conversation_id?: string }) => this.post<Requirements>("/assistant/extract-requirements", b);
   assistantChat = (message: string, history: { role: string; content: string }[]) => this.post<{ text: string }>("/assistant/chat", { message, history });
+
+  // team & workspaces
+  workspaces = () => this.request<Workspace[]>("/me/workspaces");
+  team = () => this.request<{ members: TeamMember[]; roles: Record<string, string> }>("/team");
+  invite = (email: string, role: TeamMember["role"]) => this.post<TeamMember>("/team/invite", { email, role });
+  acceptInvite = (token: string) => this.post("/team/accept", { token });
+  setMemberRole = (id: string, role: TeamMember["role"]) => this.request<TeamMember>(`/team/${id}`, { method: "PATCH", body: JSON.stringify({ role }) });
+  removeMember = (id: string) => this.request(`/team/${id}`, { method: "DELETE" });
+
+  // analytics, goals, ops
+  analytics = (days = 30, granularity: "day" | "week" | "month" = "day") => this.request<AnalyticsOverview>(`/analytics/overview?days=${days}&granularity=${granularity}`);
+  goals = () => this.request<GoalProgress>("/goals");
+  saveGoals = (b: { monthly_income: number; yearly_income: number; weekly_hours: number }) => this.request<GoalProgress>("/goals", { method: "PUT", body: JSON.stringify(b) });
+  ops = () => this.request<OpsOverview>("/ops/overview");
 }

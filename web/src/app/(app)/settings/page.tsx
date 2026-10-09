@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { NotificationSettings } from "@/components/notification-settings";
+import { TeamSettings } from "@/components/team-settings";
 
 function ApiKeys() {
   const qc = useQueryClient();
@@ -86,6 +87,7 @@ export default function Settings() {
           ))}
         </ul>
       </Card>
+      <TeamSettings />
       <NotificationSettings />
       <ApiKeys />
       <Card className="space-y-3">

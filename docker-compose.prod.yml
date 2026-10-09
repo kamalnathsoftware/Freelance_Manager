@@ -1,0 +1,63 @@
+# Production stack: docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# Requires: .env (see .env.example), DNS A records for APP_DOMAIN and API_DOMAIN pointing at this host.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment: { APP_DOMAIN: "${APP_DOMAIN:?set APP_DOMAIN}", API_DOMAIN: "${API_DOMAIN:?set API_DOMAIN}" }
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", caddy_data:/data, caddy_config:/config]
+    depends_on: [web, api]
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: fm, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}", POSTGRES_DB: fm }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U fm"], interval: 10s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: "postgresql+asyncpg://fm:${POSTGRES_PASSWORD}@postgres:5432/fm"
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /data/uploads
+      CORS_ORIGINS: '["https://${APP_DOMAIN}"]'
+      WEB_BASE_URL: "https://${APP_DOMAIN}"
+      PUBLIC_API_URL: "https://${API_DOMAIN}"
+    volumes: [uploads:/data/uploads]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started } }
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app.celery_app worker -l info
+    env_file: [.env]
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: "postgresql+asyncpg://fm:${POSTGRES_PASSWORD}@postgres:5432/fm"
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /data/uploads
+      WEB_BASE_URL: "https://${APP_DOMAIN}"
+    volumes: [uploads:/data/uploads]
+    depends_on: [api]
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app.celery_app beat -l info --schedule /tmp/celerybeat-schedule
+    env_file: [.env]
+    environment: { ENVIRONMENT: production, REDIS_URL: "redis://redis:6379/0" }
+    depends_on: [redis]
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args: { NEXT_PUBLIC_API_URL: "https://${API_DOMAIN}" }
+    restart: unless-stopped
+    depends_on: [api]
+volumes: { pgdata: {}, redisdata: {}, uploads: {}, caddy_data: {}, caddy_config: {} }

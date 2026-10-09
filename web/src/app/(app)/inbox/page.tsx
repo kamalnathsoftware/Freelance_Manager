@@ -63,10 +63,11 @@ export default function Inbox() {
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
         <Card className="space-y-3 p-3">
           <input aria-label="Search conversations" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-full rounded-xl border border-border bg-card px-3 text-sm" />
-          <div className="flex gap-1 text-sm" role="tablist">
+          <div className="flex items-center gap-1 text-sm"><div className="flex gap-1" role="tablist" aria-label="Conversation status">
             {(["open", "snoozed", "archived"] as const).map((s) => (
               <button key={s} role="tab" aria-selected={status === s} onClick={() => { setStatus(s); setSel(null); }} className={cn("rounded-lg px-2 py-1 capitalize", status === s ? "bg-brand/10 text-brand" : "text-muted")}>{s}</button>
             ))}
+            </div>
             <label className="ml-auto flex items-center gap-1 text-xs text-muted"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Unread</label>
           </div>
           {convs.isLoading && <Skeleton className="h-24" />}

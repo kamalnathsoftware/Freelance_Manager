@@ -137,3 +137,26 @@ export interface AutomationMeta { triggers: { key: string; label: string }[]; op
 export interface AutomationRun { id: string; rule_id: string; trigger: string; status: string; log: string[]; created_at: string }
 export interface Briefing { headline: string; facts: Record<string, unknown>; narrative: { text: string } | null }
 export interface Requirements { summary: string; requirements: string[]; deliverables: string[]; deadline: string | null; budget: string | null; open_questions: string[] }
+
+export interface Workspace { owner_id: string; name: string; email: string; role: "owner" | "full" | "messaging_only" | "view_only"; is_self: boolean }
+export interface TeamMember { id: string; invite_email: string; role: "full" | "messaging_only" | "view_only"; accepted: boolean; created_at: string }
+export interface AnalyticsOverview {
+  currency: string; days: number; granularity: string;
+  kpis: { net_earnings: number; previous_net_earnings: number; change_pct: number | null; win_rate: number; proposals_submitted: number; open_pipeline_value: number; active_orders: number; avg_response_minutes: number | null };
+  earnings_series: { key: string; net: number }[];
+  by_platform: { key: string; gross: number; fee: number; net: number; count: number }[];
+  top_clients: { key: string; net: number }[];
+  funnel: { stage: string; count: number; conversion_from_previous: number | null }[];
+  win_rate_by: Record<string, { key: string; submitted: number; won: number; win_rate: number }[]>;
+  response_times: { platform: string; replies: number; avg_response_minutes: number }[];
+  utilization: { tracked_hours: number; billable_hours: number; capacity_hours: number; utilization_pct: number | null; billable_pct: number | null };
+  upcoming_deadlines: { title: string; kind: string; at: string; href: string }[];
+  missing_fx_rates: string[];
+}
+export interface GoalProgress {
+  currency: string; goals: { monthly_income: number; yearly_income: number; weekly_hours: number };
+  month: { earned: number; goal: number; pct: number | null; expected_pct_by_today: number; status: "ahead" | "on_track" | "behind" | null };
+  year: { earned: number; goal: number; pct: number | null };
+  forecast: { run_rate_month_end: number; committed_orders_net: number; pipeline_weighted: number; month_end_with_committed: number; month_end_with_pipeline: number; assumptions: { note: string; source?: string; stage_win_probability: Record<string, number | string> } };
+}
+export interface OpsOverview { db_ok: boolean; users: number; pending_deliveries: number; celery: { online: number; error?: string }; last_24h: Record<string, Record<string, number>>; recent_failures: Record<string, Record<string, unknown>[]> }

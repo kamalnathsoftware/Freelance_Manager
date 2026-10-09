@@ -14,7 +14,19 @@ const store: TokenStore = {
   },
 };
 
-export const api = new ApiClient(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000", store, () => {
-  if (typeof window !== "undefined") window.location.href = "/login";
-});
+const WS_KEY = "fm.workspace";
+/** The workspace (owner id) the user is currently acting in; null = their own. */
+export const getWorkspace = (): string | null => {
+  try { return typeof window === "undefined" ? null : localStorage.getItem(WS_KEY); } catch { return null; }
+};
+export const setWorkspace = (id: string | null) => {
+  try { if (id) localStorage.setItem(WS_KEY, id); else localStorage.removeItem(WS_KEY); } catch { /* storage unavailable */ }
+};
+
+export const api = new ApiClient(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
+  store,
+  () => { if (typeof window !== "undefined") window.location.href = "/login"; },
+  getWorkspace,
+);
 export const hasSession = () => store.get() !== null;

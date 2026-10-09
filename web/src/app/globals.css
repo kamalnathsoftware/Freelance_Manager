@@ -6,12 +6,15 @@
   --bg: 220 20% 97%;
   --card: 0 0% 100%;
   --fg: 224 30% 12%;
-  --muted: 220 9% 46%;
+  --muted: 220 9% 38%;
   --border: 220 14% 90%;
   --brand: 243 75% 59%;
   --brand-fg: 0 0% 100%;
+  --brand-text: 243 75% 48%;
   --danger: 0 72% 51%;
-  --success: 142 71% 35%;
+  --danger-text: 0 72% 40%;
+  --success: 142 71% 28%;
+  --success-text: 142 76% 25%;
 }
 .dark {
   --bg: 224 28% 8%;
@@ -19,10 +22,13 @@
   --fg: 210 20% 96%;
   --muted: 218 11% 65%;
   --border: 224 16% 20%;
-  --brand: 243 85% 68%;
-  --brand-fg: 224 28% 8%;
-  --danger: 0 80% 62%;
-  --success: 142 60% 50%;
+  --brand: 243 70% 58%;
+  --brand-fg: 0 0% 100%;
+  --brand-text: 243 100% 82%;
+  --danger: 0 72% 50%;
+  --danger-text: 0 90% 72%;
+  --success: 142 60% 28%;
+  --success-text: 142 65% 60%;
 }
 body { @apply bg-bg text-fg antialiased; }
 :focus-visible { @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-bg; }
