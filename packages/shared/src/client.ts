@@ -1,6 +1,7 @@
 import type {
-  ApiErrorBody, AuditEntry, Completeness, Gig, GigInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
-  PlatformProfile, SessionInfo, Suggestion, SyncLog, TokenPair, User,
+  ApiErrorBody, ApiKeyInfo, AuditEntry, Completeness, Gig, GigInput, Job, JobInput, LoginOut, MasterProfile, PlatformAccount, PlatformInfo,
+  PlatformEvent, PlatformProfile, Proposal, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
+  Suggestion, SyncLog, TokenPair, User,
 } from "./types";
 
 export class ApiError extends Error {
@@ -119,4 +120,41 @@ export class ApiClient {
   // AI (suggestions only — caller must get user approval before saving)
   aiRewrite = (b: { kind: "headline" | "bio" | "gig_title" | "gig_description"; text: string; platform?: string; tone?: string; keywords?: string[] }) =>
     this.post<Suggestion>("/ai/rewrite", b);
+
+  // jobs
+  jobs = (q: { platform?: string; min_score?: number; q?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])).toString();
+    return this.request<Job[]>(`/jobs${qs ? `?${qs}` : ""}`);
+  };
+  addJob = (b: JobInput) => this.post<Job>("/jobs", b);
+  dismissJob = (id: string) => this.request<Job>(`/jobs/${id}/dismiss`, { method: "PATCH" });
+  shortlistJob = (id: string) => this.post<{ proposal_id: string; stage: Stage }>(`/jobs/${id}/shortlist`);
+  bidSuggestion = (id: string) => this.request<{ amount: number | null; rationale: string }>(`/jobs/${id}/bid-suggestion`);
+  searches = () => this.request<SavedSearch[]>("/searches");
+  addSearch = (b: Omit<SavedSearch, "id">) => this.post<SavedSearch>("/searches", b);
+  deleteSearch = (id: string) => this.request(`/searches/${id}`, { method: "DELETE" });
+
+  // proposals & pipeline
+  templates = () => this.request<ProposalTemplate[]>("/proposal-templates");
+  addTemplate = (b: Omit<ProposalTemplate, "id">) => this.post<ProposalTemplate>("/proposal-templates", b);
+  pipeline = () => this.request<Record<Stage, Proposal[]>>("/pipeline");
+  proposal = (id: string) => this.request<Proposal>(`/proposals/${id}`);
+  updateProposal = (id: string, b: Partial<Pick<Proposal, "body" | "bid_amount" | "account_id" | "credits_used" | "follow_up_at">>) =>
+    this.request<Proposal>(`/proposals/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+  draftProposal = (id: string, b: { template_id?: string; use_ai?: boolean; tone?: string }) => this.post<Proposal>(`/proposals/${id}/draft`, b);
+  approveProposal = (id: string) => this.post<Proposal>(`/proposals/${id}/approve`);
+  submitProposal = (id: string) => this.post<SubmitResult>(`/proposals/${id}/submit`);
+  markSubmitted = (id: string) => this.post<Proposal>(`/proposals/${id}/mark-submitted`);
+  moveProposal = (id: string, stage: Stage, lost_reason = "") =>
+    this.request<Proposal>(`/proposals/${id}/move`, { method: "PATCH", body: JSON.stringify({ stage, lost_reason }) });
+  proposalAnalytics = () => this.request<ProposalAnalytics>("/analytics/proposals");
+
+  // ingestion
+  apiKeys = () => this.request<ApiKeyInfo[]>("/api-keys");
+  createApiKey = (name: string) => this.post<{ id: string; key: string; note: string }>("/api-keys", { name });
+  revokeApiKey = (id: string) => this.request(`/api-keys/${id}`, { method: "DELETE" });
+  events = (kind?: string) => this.request<PlatformEvent[]>(`/events${kind ? `?kind=${kind}` : ""}`);
+  gmailAuthUrl = () => this.request<{ url: string }>("/ingest/gmail/auth-url");
+  gmailConnect = (code: string) => this.post("/ingest/gmail/connect", { code });
+  gmailPoll = () => this.post<{ seen: number; ingested: number }>("/ingest/gmail/poll");
 }

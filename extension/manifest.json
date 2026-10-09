@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Freelance Manager Capture",
+  "version": "0.1.0",
+  "description": "Save the job post or message you are viewing to Freelance Manager. Runs only when you click it.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://*.upwork.com/*", "https://*.fiverr.com/*", "https://*.freelancer.com/*", "https://*.peopleperhour.com/*",
+    "https://*.toptal.com/*", "https://*.guru.com/*", "https://*.linkedin.com/*", "https://contra.com/*"
+  ],
+  "optional_host_permissions": ["http://localhost:8000/*", "https://*/*"],
+  "action": { "default_popup": "popup.html", "default_title": "Save to Freelance Manager" },
+  "options_page": "options.html"
+}

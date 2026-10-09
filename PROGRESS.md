@@ -4,8 +4,8 @@
 |---|---|---|
 | 1 | Foundation: monorepo, Docker, CI, auth, settings, design system, app shells, API client | ✅ Done |
 | 2 | Platform hub, profiles, gigs, AI rewrite | ✅ Done |
-| 3 | Jobs, proposals, pipeline, browser extension, email ingestion | ⏳ Next |
-| 4 | Unified inbox, real-time, CRM | ⏳ |
+| 3 | Jobs, proposals, pipeline, browser extension, email ingestion | ✅ Done |
+| 4 | Unified inbox, real-time, CRM | ⏳ Next |
 | 5 | Notifications (in-app, push, email, WhatsApp, …) | ⏳ |
 | 6 | Orders, projects, time, invoices, finance | ⏳ |
 | 7 | Forms builder, automation rules, AI assistant | ⏳ |
@@ -28,6 +28,15 @@
 **Web**: Platforms hub (add/sync/remove, integration status), Profiles (master form, completeness, AI suggest→apply/discard, platform variants with drift), Gigs (create with 3 packages, clone, delete).
 
 **Stubbed pending API access**: Upwork GraphQL sync (raises `NotConfiguredError`, logged as *skipped*). Freelancer.com profile sync is implemented against `/users/0.1/self` but untested against the live API. Platform field limits in `adapters/rules.py` are reasonable defaults — verify against current platform docs.
+
+## Phase 3 — what exists
+
+**Backend** (46 tests total, 95% coverage): job inbox (dedupe/upsert by platform+external id, filters, dismiss), explainable match scoring (skills, budget vs rate, saved-search keywords, past wins, client signals), saved searches with alert events (`job_match`), proposal templates with `{variables}`, template/AI drafting (labelled `ai_generated`), bid suggestion, kanban pipeline (8 stages, loss reasons required, follow-up reminders), connects/credits ledger, proposal analytics (win rate by platform/template/price band/hour). **Human-in-the-loop is enforced server-side**: submit/mark-submitted/move-to-submitted return 409 without a prior explicit `approve`, and editing the text revokes approval. API submission is attempted only for API-tier accounts whose adapter supports it; otherwise the response is the assisted flow (copy text + open platform link + "mark as submitted").
+Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peopleperhour/toptal/guru/linkedin/contra (message, order, delivery, revision, offer, job invite, review, payment, bid viewed/accepted/declined), idempotent `PlatformEvent`s, account counters, job-invite → job. Gmail OAuth (read-only scope) connect + poll (metadata/snippet only). Scoped API keys (hash-only storage) for the extension.
+**Chrome extension (MV3)** in `extension/`: on-click only (`activeTab`), reads the already-rendered page (JSON-LD/OG/h1/selection), posts to `/ingest/capture` with an ingest-only key.
+**Web**: Jobs inbox (filters, match %, shortlist→builder), Pipeline kanban (drag-and-drop + keyboard select), Proposal builder (templates, AI draft, approve, assisted submit), API-key management in Settings.
+
+**Limitations**: email patterns are heuristic and need tuning against real notification emails; Gmail poll is on-demand (no Pub/Sub push or Celery schedule yet); no Gmail token refresh; Upwork/Freelancer job feeds (`fetch_jobs`) are not implemented; the extension has no icons and uses generic page parsing.
 
 ## Not yet done / known gaps from Phase 1
 - Team members/VA roles: table exists, no invite/permission endpoints yet.

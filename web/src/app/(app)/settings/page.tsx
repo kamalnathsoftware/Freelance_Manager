@@ -7,6 +7,31 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 
+function ApiKeys() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const keys = useQuery({ queryKey: ["api-keys"], queryFn: api.apiKeys });
+  const [name, setName] = useState("Chrome extension");
+  const [fresh, setFresh] = useState<string | null>(null);
+  return (
+    <Card className="space-y-3">
+      <h2 className="font-semibold">API keys (browser extension)</h2>
+      <p className="text-sm text-muted">Keys can only send captured jobs/messages. Install the extension from the <code>extension/</code> folder.</p>
+      <div className="flex items-end gap-2">
+        <Input label="Key name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Button onClick={async () => { const k = await api.createApiKey(name); setFresh(k.key); qc.invalidateQueries({ queryKey: ["api-keys"] }); }}>Create key</Button>
+      </div>
+      {fresh && <p className="break-all rounded-xl bg-border/50 p-2 text-sm">Copy now (shown once): <code>{fresh}</code></p>}
+      <ul className="divide-y divide-border text-sm">
+        {keys.data?.filter((k) => !k.revoked).map((k) => (
+          <li key={k.id} className="flex items-center justify-between py-2"><span>{k.name} <span className="text-muted">{k.prefix}…</span></span>
+            <Button size="sm" variant="outline" onClick={async () => { await api.revokeApiKey(k.id); qc.invalidateQueries({ queryKey: ["api-keys"] }); toast("Key revoked"); }}>Revoke</Button></li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const qc = useQueryClient();
   const toast = useToast();
@@ -60,6 +85,7 @@ export default function Settings() {
           ))}
         </ul>
       </Card>
+      <ApiKeys />
       <Card className="space-y-3">
         <h2 className="font-semibold">Integration status</h2>
         <p className="text-sm text-muted">Platforms appear here once connected (Connected via API · Via email · Manual).</p>

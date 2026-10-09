@@ -1,3 +1,14 @@
+from app.models.jobs import (
+    ApiKey,
+    CreditEntry,
+    Job,
+    MailConnection,
+    PlatformEvent,
+    Proposal,
+    ProposalTemplate,
+    SavedSearch,
+    Stage,
+)
 from app.models.platform import (
     AccountStatus,
     Gig,
@@ -15,6 +26,15 @@ from app.models.platform import (
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
 
 __all__ = [
+    "ApiKey",
+    "CreditEntry",
+    "Job",
+    "MailConnection",
+    "PlatformEvent",
+    "Proposal",
+    "ProposalTemplate",
+    "SavedSearch",
+    "Stage",
     "AccountStatus",
     "AuditLog",
     "AuthSession",

@@ -36,3 +36,33 @@ export interface Gig {
 }
 export type GigInput = Omit<Gig, "id">;
 export interface Suggestion { text: string; ai_generated: boolean; requires_approval: boolean }
+
+export interface Job {
+  id: string; platform: string; title: string; description: string; budget_min: number | null; budget_max: number | null;
+  budget_type: "fixed" | "hourly"; currency: string; skills: string[]; client: Record<string, unknown>; url: string;
+  posted_at: string | null; source: string; score: number; score_reasons: string[]; dismissed: boolean; created_at: string;
+}
+export interface JobInput {
+  platform: string; title: string; description?: string; budget_min?: number | null; budget_max?: number | null;
+  budget_type?: "fixed" | "hourly"; skills?: string[]; url?: string; client?: Record<string, unknown>;
+}
+export type Stage = "found" | "shortlisted" | "drafted" | "submitted" | "viewed" | "interview" | "won" | "lost";
+export const STAGES: Stage[] = ["found", "shortlisted", "drafted", "submitted", "viewed", "interview", "won", "lost"];
+export interface Proposal {
+  id: string; job_id: string; account_id: string | null; template_id: string | null; stage: Stage; position: number;
+  body: string; bid_amount: number | null; currency: string; credits_used: number; ai_generated: boolean;
+  approved_at: string | null; submitted_at: string | null; submitted_via: string; lost_reason: string;
+  follow_up_at: string | null; job_title: string; platform: string; unresolved_variables: string[];
+}
+export interface ProposalTemplate { id: string; name: string; body: string; platform: string }
+export interface SavedSearch { id: string; name: string; keywords: string[]; skills: string[]; platforms: string[]; min_budget: number | null; alert_min_score: number; active: boolean }
+export interface SubmitResult { submitted: boolean; via: "api" | "manual"; proposal_text?: string; open_url?: string; instructions?: string }
+export interface ApiKeyInfo { id: string; name: string; prefix: string; last_used_at: string | null; revoked: boolean; created_at: string }
+export interface PlatformEvent { id: string; platform: string; kind: string; title: string; summary: string; url: string; source: string; handled: boolean; received_at: string }
+export interface ProposalAnalytics {
+  submitted: number; won: number; win_rate: number;
+  by_platform: { key: string; submitted: number; won: number; win_rate: number }[];
+  by_template: { key: string; submitted: number; won: number; win_rate: number }[];
+  by_price_band: { key: string; submitted: number; won: number; win_rate: number }[];
+  by_hour: { key: string; submitted: number; won: number; win_rate: number }[];
+}

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     smtp_from: str = "no-reply@freelancemanager.local"
 
     google_client_id: str = ""
+    google_client_secret: str = ""
     anthropic_api_key: str = ""
     ai_model: str = "claude-sonnet-5-5"
     sentry_dsn: str = ""
