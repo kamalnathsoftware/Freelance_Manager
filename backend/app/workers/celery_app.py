@@ -16,6 +16,7 @@ celery_app.conf.update(
         "flush-digests": {"task": "fm.flush_digests", "schedule": 3600.0},
         "scan-reminders": {"task": "fm.scan_reminders", "schedule": 5 * 60.0},
         "scan-automations": {"task": "fm.scan_automations", "schedule": 10 * 60.0},
+        "pf-scan-followups": {"task": "fm.pf_scan_followups", "schedule": 30 * 60.0},
     },
 )
 
@@ -102,3 +103,10 @@ def scan_automations_task() -> int:
     from app.services.automation import scan_stale
 
     return asyncio.run(_with_db(scan_stale))
+
+
+@celery_app.task(name="fm.pf_scan_followups")
+def pf_scan_followups_task() -> int:
+    from app.services.project_finder.outreach import scan_followups
+
+    return asyncio.run(_with_db(scan_followups))

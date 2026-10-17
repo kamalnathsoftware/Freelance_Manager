@@ -3,6 +3,7 @@
 from typing import Annotated
 from urllib.parse import urlparse
 
+from email_validator import EmailNotValidError, validate_email
 from pydantic import AfterValidator, StringConstraints
 
 from app.services.project_finder import valid_tz
@@ -13,10 +14,24 @@ def _http_url(v: str) -> str:
     v = v.strip()
     if not v:
         return v
+    if (
+        ":" not in v
+    ):  # "acme.com" -> https://acme.com (anything with an explicit scheme is checked as-is)
+        v = f"https://{v}"
     p = urlparse(v)
     if p.scheme not in ("http", "https") or not p.netloc:
         raise ValueError("must be an http(s) URL")
     return v
+
+
+def _email(v: str) -> str:
+    v = v.strip()
+    if not v:
+        return v
+    try:
+        return validate_email(v, check_deliverability=False).normalized
+    except EmailNotValidError as e:
+        raise ValueError(str(e)) from None
 
 
 def _tz(v: str) -> str:
@@ -34,6 +49,7 @@ def _currency(v: str) -> str:
 
 
 HttpUrlStr = Annotated[str, StringConstraints(max_length=1000), AfterValidator(_http_url)]
+EmailOrBlank = Annotated[str, StringConstraints(max_length=320), AfterValidator(_email)]
 TzStr = Annotated[str, StringConstraints(max_length=64), AfterValidator(_tz)]
 CurrencyStr = Annotated[str, StringConstraints(max_length=3), AfterValidator(_currency)]
 
