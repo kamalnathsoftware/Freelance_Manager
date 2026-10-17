@@ -97,6 +97,13 @@ Email ingestion: sender/subject classifier for fiverr/upwork/freelancer/peoplepe
 ## Built, but only tested against mocks (needs your credentials/accounts to prove live)
 Gmail polling & OAuth, Google Calendar sync, WhatsApp Cloud API / Twilio / Telegram / Expo / Web Push sending and webhooks, Claude API features, Freelancer.com profile sync.
 
+## Project Finder (added after phase 8)
+- **Live feeds are unverified.** The parsers, robots.txt gate, rate limits and refresh logic are tested against fixtures in each site's documented format, but were built in a sandbox that could not reach those sites. First run in a networked environment: press **Refresh now** and read the per-source result panel; fix any parser drift (the fetchers are small, in `services/project_finder/feeds.py`).
+- A site whose robots.txt disallows its feed path is skipped, not bypassed. Reddit r/forhire usually needs `REDDIT_CLIENT_ID/SECRET` (official API).
+- Fit score is a transparent heuristic (skills in the title count more than in the body), not a model. Earnings are per currency with no conversion. Streaks are computed against the *current* daily goal.
+- Scheduled refresh runs per user and each user hits the upstream feeds themselves; fine for a personal workspace, share a fetch cache before serving many users.
+- Responsive web only; no native Expo screens. The invoice/FIRC records are bookkeeping aids, not tax advice.
+
 ## Stubbed pending access
 - **Upwork API** (profile sync, job feed, proposal submit): adapter is wired and degrades to the assisted flow; needs Upwork-approved API keys and implementing the GraphQL calls.
 - Job feeds (`fetch_jobs`) for Upwork/Freelancer — jobs currently arrive via email, extension, manual entry and forms.

@@ -51,7 +51,7 @@ npm run dev
 ```bash
 # backend (Python 3.12+)
 cd backend && python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
-pytest --cov=app                  # 149 tests on in-memory SQLite, FK cascades enforced
+pytest --cov=app                  # 248 tests on in-memory SQLite, FK cascades enforced
 ruff check . && ruff format --check . && mypy app
 DATABASE_URL=postgresql+asyncpg://fm:fm@localhost:5432/fm alembic upgrade head
 python -m app.seed && uvicorn app.main:app --reload
@@ -108,6 +108,49 @@ Open **Platforms → Add account**, then:
 **Gmail / Google Calendar:** create an OAuth client in Google Cloud, set `GOOGLE_CLIENT_ID/SECRET`, and add redirect URIs `<WEB_BASE_URL>/settings/gmail/callback` and `<WEB_BASE_URL>/calendar/google/callback`.
 
 **Chrome extension:** `chrome://extensions` → Developer mode → *Load unpacked* → `extension/`. Create an API key under **Settings → API keys** and paste it in the extension settings.
+
+## Project Finder (find work without platform fees)
+
+**Web → Project Finder** helps you win clients directly instead of paying for Upwork Connects or Fiverr commission. API: `/api/v1/project-finder/*` (see `/api/docs`). Everything is scoped to the logged-in workspace; **the app never sends a message** - you copy drafts and send them yourself.
+
+| Tab | What it does |
+|---|---|
+| **Jobs** | Aggregates public feeds (We Work Remotely RSS, RemoteOK and Remotive APIs, Hacker News "Who is hiring" + "Seeking freelancer", Reddit r/forhire), normalises them and gives each a **fit score 0-100** from your skills/keywords with the reasons shown. Keyword chips, source/remote/min-score filters, Save / Dismiss / **Add to leads**. |
+| **Leads** | Outreach CRM as a Kanban board (drag and drop, or the status dropdown on touch/keyboard) and list view. Statuses: New, Contacted, Replied, Call booked, Proposal sent, Won, Lost. Daily goal (default 5 messages) with streak, follow-up dates and reminders. |
+| **Templates** | Cold email / LinkedIn DM / proposal templates with `{{company}} {{contact}} {{first_name}} {{problem}} {{website}} {{country}} {{my_name}}`. **Fill placeholders** (no AI) or **Generate draft with AI**; copy to clipboard. |
+| **Proposals** | Log proposals (date, amount, status, outcome). Sending one moves the lead to *Proposal sent*; winning it moves the lead to *Won*. |
+| **Stats** | Reply rate, win rate, earnings per source and currency, best source, lead funnel, outreach streak, invoices awaiting FIRC/e-FIRA. |
+| **Sources** | The 10 lead sources (Freelancer.com, Contra, PeoplePerHour, We Work Remotely, RemoteOK, Remotive, Wellfound, LinkedIn contract jobs, Reddit r/forhire, Hacker News) with status, last checked and notes; add your own links. |
+| **Settings** | Skills, extra/exclude keywords, minimum score to keep a job, daily goal, your name, your time zone and working hours. |
+
+**Foreign-client helper.** Each lead has country, time zone and currency. A badge shows working-hours overlap with *your* zone (default `Asia/Kolkata`, 09:00-18:00 on both sides, daylight-saving aware). Won leads can hold invoice records: amount, currency, date, Wise/Payoneer/PayPal/SWIFT, FIRC/e-FIRA received, LUT note. **This is a record-keeping aid, not tax or legal advice** - confirm GST/LUT, FIRC/e-FIRA and FEMA matters with a chartered accountant.
+
+**How job feeds stay polite and safe**
+- Only sources with a public RSS/API feed are fetched; the rest (Freelancer.com, Contra, ...) are manual links. Nothing is scraped, nothing logs in on your behalf.
+- Every unauthenticated request checks the site's `robots.txt` first (a blocked or unreadable robots.txt means the source is skipped and the reason is shown), sends a descriptive `User-Agent` (`PF_USER_AGENT`), and caps response size.
+- Each source has a minimum refresh interval (3 h; Remotive and Hacker News 6 h, as Remotive asks for at most 4 requests a day). "Refresh now" and the scheduler share it, so extra clicks are harmless.
+- RemoteOK jobs link back to RemoteOK as their terms require. Feed HTML is reduced to plain text and only `http(s)` links are kept.
+- **Reddit:** with `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` (a free "script" app at reddit.com/prefs/apps) the official API is used. Without them r/forhire is read via RSS only if Reddit's robots.txt allows it; if not, the source shows "blocked" - add the credentials.
+- Only jobs that match your skills/keywords (and reach the minimum score) are stored. Your Save/Dismiss choices survive refreshes; changing skills re-scores stored jobs.
+
+**Scheduling.** The `beat` service (Celery, already in `docker-compose.yml`) runs `fm.pf_refresh_feeds` every 3 hours and `fm.pf_scan_followups` every 30 minutes. Without Redis/Celery, use **Refresh now**. Follow-up reminders reuse the *Proposal follow-up due* notification: in-app always; switch on email/push for it under **Notifications** (optional email).
+
+**Setup**
+```bash
+cd backend && pip install -e ".[dev]"      # adds defusedxml + tzdata
+alembic upgrade head                        # migration 0008 creates the pf_* tables
+# optional: ANTHROPIC_API_KEY (AI drafts), REDDIT_CLIENT_ID/SECRET, PF_USER_AGENT - see below
+pytest tests/test_project_finder_*.py       # no network needed; feeds are mocked
+```
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | "Generate draft with AI" (shared with the rest of the app; unset = that button returns a clear 503, everything else works) | empty |
+| `AI_MODEL` | Model used for drafts | `claude-sonnet-5-5` |
+| `PF_USER_AGENT` | `User-Agent` for feed requests - put a contact in it | `FreelanceManager-ProjectFinder/0.1 (personal use; respects robots.txt)` |
+| `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` | Official Reddit API for r/forhire | empty (RSS if allowed) |
+
+Notes: the daily goal rolls over at midnight in your account time zone (**Settings → account**); earnings are shown per currency without conversion; the app has responsive web screens only - there are no native mobile screens for Project Finder yet.
 
 ## Notification channels
 
