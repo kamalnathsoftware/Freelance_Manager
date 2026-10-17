@@ -3,8 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-export const PF_TABS = [
+const PF_TABS = [
   { href: "/project-finder/leads", label: "Leads" },
+  { href: "/project-finder/templates", label: "Templates" },
 ];
 
 export default function ProjectFinderLayout({ children }: { children: React.ReactNode }) {

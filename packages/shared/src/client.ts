@@ -3,7 +3,7 @@ import type {
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
-import type { OutreachChannel, PFGoal, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFSettingsInput } from "./project-finder";
+import type { OutreachChannel, PFDraft, PFGoal, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFSettingsInput, PFTemplate, PFTemplateInput } from "./project-finder";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) {
@@ -327,4 +327,12 @@ export class ApiClient {
   pfGoal = () => this.pfSend<PFGoal>("GET", "/outreach/goal");
   pfLogOutreach = (b: { lead_id?: string; channel?: OutreachChannel } = {}) => this.pfSend<PFGoal>("POST", "/outreach/log", b);
   pfUndoOutreach = () => this.pfSend<PFGoal>("DELETE", "/outreach/log/latest");
+  pfTemplates = () => this.pfSend<PFTemplate[]>("GET", "/templates");
+  pfTemplateVars = () => this.pfSend<Record<string, string>>("GET", "/templates/variables");
+  pfCreateTemplate = (b: PFTemplateInput) => this.pfSend<PFTemplate>("POST", "/templates", b);
+  pfUpdateTemplate = (id: string, b: Partial<PFTemplateInput>) => this.pfSend<PFTemplate>("PATCH", `/templates/${id}`, b);
+  pfDeleteTemplate = (id: string) => this.pfSend("DELETE", `/templates/${id}`);
+  pfAddStarters = () => this.pfSend<PFTemplate[]>("POST", "/templates/starters");
+  pfRenderTemplate = (id: string, lead_id?: string) => this.pfSend<PFDraft>("POST", `/templates/${id}/render`, { lead_id });
+  pfGenerateDraft = (id: string, lead_id: string, instructions = "") => this.pfSend<PFDraft>("POST", `/templates/${id}/generate`, { lead_id, instructions });
 }

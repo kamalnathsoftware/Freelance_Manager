@@ -23,3 +23,18 @@ export const LEAD_SOURCES = ["Cold email", "LinkedIn", "Reddit r/forhire", "Hack
 
 /** Local calendar day as YYYY-MM-DD (not UTC), for comparing with server dates. */
 export const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+
+/** Copy text to the clipboard. Falls back to a hidden textarea when the async API is unavailable (non-HTTPS origins). */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through to the legacy path */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch { return false; }
+}

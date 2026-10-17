@@ -24,3 +24,10 @@ export interface PFGoal {
   goal: number; today: number; remaining: number; goal_met: boolean; streak: number; best_streak: number;
   days: { date: string; count: number; met: boolean }[];
 }
+
+export const TEMPLATE_KINDS = ["cold_email", "linkedin_dm", "proposal"] as const;
+export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
+export const TEMPLATE_KIND_LABEL: Record<TemplateKind, string> = { cold_email: "Cold email", linkedin_dm: "LinkedIn DM", proposal: "Proposal" };
+export interface PFTemplate { id: string; name: string; kind: TemplateKind; subject: string; body: string; created_at: string }
+export type PFTemplateInput = Pick<PFTemplate, "name" | "kind" | "subject" | "body">;
+export interface PFDraft { subject: string; body: string; missing: string[]; unknown: string[]; ai_generated: boolean }
