@@ -2,7 +2,16 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.project_finder import jobs, leads, outreach, settings, sources, templates
+from app.api.v1.project_finder import (
+    jobs,
+    leads,
+    outreach,
+    proposals,
+    settings,
+    sources,
+    stats,
+    templates,
+)
 
 router = APIRouter(prefix="/project-finder")
 router.include_router(settings.router)
@@ -11,3 +20,5 @@ router.include_router(outreach.router)
 router.include_router(templates.router)
 router.include_router(sources.router)
 router.include_router(jobs.router)
+router.include_router(proposals.router)
+router.include_router(stats.router)
