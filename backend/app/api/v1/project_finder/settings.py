@@ -7,6 +7,7 @@ from app.api.deps import DB, CurrentUser
 from app.api.v1.project_finder.common import TzStr, clean_list
 from app.schemas import ORM
 from app.services.project_finder import get_pf_settings
+from app.services.project_finder.refresh import rescore_user
 
 router = APIRouter(tags=["project-finder"])
 
@@ -60,5 +61,7 @@ async def update_settings(body: SettingsIn, user: CurrentUser, db: DB) -> object
         raise HTTPException(422, "home_tz cannot be empty")
     for k, v in changes.items():
         setattr(row, k, v)
+    if {"skills", "include_keywords", "exclude_keywords"} & changes.keys():
+        await rescore_user(db, user.id)  # keep stored jobs consistent with the new skills list
     await db.commit()
     return row

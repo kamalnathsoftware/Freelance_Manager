@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     admin_emails: list[str] = []  # users who can open /ops
     max_upload_mb: int = 5
     auth_rate_limit_per_minute: int = 20
+    # Project Finder job feeds
+    pf_user_agent: str = "FreelanceManager-ProjectFinder/0.1 (personal use; respects robots.txt)"
+    reddit_client_id: str = (
+        ""  # optional: official Reddit API (otherwise r/forhire RSS, if robots.txt allows)
+    )
+    reddit_client_secret: str = ""
 
 
 @lru_cache
