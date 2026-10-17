@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
  *  Add a locale by adding a dictionary here (or lazy-loading JSON) - components only ever call t("key"). */
 export const dictionaries = {
   en: {
-    "nav.dashboard": "Dashboard", "nav.inbox": "Inbox", "nav.platforms": "Platforms", "nav.jobs": "Jobs", "nav.pipeline": "Pipeline", "nav.gigs": "Gigs",
+    "nav.dashboard": "Dashboard", "nav.inbox": "Inbox", "nav.platforms": "Platforms", "nav.jobs": "Jobs", "nav.pipeline": "Pipeline", "nav.projectFinder": "Project Finder", "nav.gigs": "Gigs",
     "nav.profiles": "Profiles", "nav.clients": "Clients", "nav.orders": "Orders", "nav.projects": "Projects", "nav.finance": "Finance", "nav.calendar": "Calendar",
     "nav.forms": "Forms", "nav.automations": "Automations", "nav.analytics": "Analytics", "nav.notifications": "Notifications", "nav.settings": "Settings",
     "common.search": "Search…", "common.logout": "Log out", "common.save": "Save", "common.cancel": "Cancel", "common.loading": "Loading…",
@@ -13,7 +13,7 @@ export const dictionaries = {
     "dash.title": "Dashboard", "dash.net": "Net earnings", "dash.winrate": "Win rate", "dash.pipeline": "Open pipeline", "dash.orders": "Active orders", "dash.today": "Today",
   },
   es: {
-    "nav.dashboard": "Panel", "nav.inbox": "Bandeja", "nav.platforms": "Plataformas", "nav.jobs": "Trabajos", "nav.pipeline": "Embudo", "nav.gigs": "Servicios",
+    "nav.dashboard": "Panel", "nav.inbox": "Bandeja", "nav.platforms": "Plataformas", "nav.jobs": "Trabajos", "nav.pipeline": "Embudo", "nav.projectFinder": "Buscador de proyectos", "nav.gigs": "Servicios",
     "nav.profiles": "Perfiles", "nav.clients": "Clientes", "nav.orders": "Pedidos", "nav.projects": "Proyectos", "nav.finance": "Finanzas", "nav.calendar": "Calendario",
     "nav.forms": "Formularios", "nav.automations": "Automatizaciones", "nav.analytics": "Analítica", "nav.notifications": "Notificaciones", "nav.settings": "Ajustes",
     "common.search": "Buscar…", "common.logout": "Cerrar sesión", "common.save": "Guardar", "common.cancel": "Cancelar", "common.loading": "Cargando…",

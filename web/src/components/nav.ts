@@ -1,6 +1,6 @@
 import {
   BarChart3, Briefcase, CalendarDays, ClipboardList, FileText, FolderKanban, Inbox, KanbanSquare, LayoutDashboard, Settings,
-  Bell, Plug, Sparkles, UserCircle, Users, Wallet, Zap, type LucideIcon,
+  Bell, Plug, Radar, Sparkles, UserCircle, Users, Wallet, Zap, type LucideIcon,
 } from "lucide-react";
 
 import type { Key } from "@/lib/i18n";
@@ -10,6 +10,7 @@ export const NAV: { label: string; key: Key; href: string; icon: LucideIcon }[] 
   { label: "Inbox", key: "nav.inbox", href: "/inbox", icon: Inbox },
   { label: "Platforms", key: "nav.platforms", href: "/platforms", icon: Plug },
   { label: "Jobs", key: "nav.jobs", href: "/jobs", icon: Briefcase },
+  { label: "Project Finder", key: "nav.projectFinder", href: "/project-finder", icon: Radar },
   { label: "Pipeline", key: "nav.pipeline", href: "/pipeline", icon: KanbanSquare },
   { label: "Gigs", key: "nav.gigs", href: "/gigs", icon: Sparkles },
   { label: "Profiles", key: "nav.profiles", href: "/profiles", icon: UserCircle },

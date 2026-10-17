@@ -3,6 +3,7 @@ import type {
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
+import type { OutreachChannel, PFGoal, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFSettingsInput } from "./project-finder";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) {
@@ -306,4 +307,24 @@ export class ApiClient {
   goals = () => this.request<GoalProgress>("/goals");
   saveGoals = (b: { monthly_income: number; yearly_income: number; weekly_hours: number }) => this.request<GoalProgress>("/goals", { method: "PUT", body: JSON.stringify(b) });
   ops = () => this.request<OpsOverview>("/ops/overview");
+
+  // project finder
+  private pfSend<T>(method: string, path: string, body?: unknown) {
+    return this.request<T>(`/project-finder${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+  }
+  private static qs(q: Record<string, string | number | boolean | undefined | null>) {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(q)) if (v !== undefined && v !== null && v !== "" && v !== false) p.set(k, String(v));
+    const s = p.toString();
+    return s ? `?${s}` : "";
+  }
+  pfSettings = () => this.pfSend<PFSettings>("GET", "/settings");
+  pfSaveSettings = (b: PFSettingsInput) => this.pfSend<PFSettings>("PUT", "/settings", b);
+  pfLeads = (q: { status?: string; q?: string; due?: boolean; country?: string } = {}) => this.pfSend<PFLead[]>("GET", `/leads${ApiClient.qs(q)}`);
+  pfCreateLead = (b: PFLeadInput) => this.pfSend<PFLead>("POST", "/leads", b);
+  pfUpdateLead = (id: string, b: PFLeadPatch) => this.pfSend<PFLead>("PATCH", `/leads/${id}`, b);
+  pfDeleteLead = (id: string) => this.pfSend("DELETE", `/leads/${id}`);
+  pfGoal = () => this.pfSend<PFGoal>("GET", "/outreach/goal");
+  pfLogOutreach = (b: { lead_id?: string; channel?: OutreachChannel } = {}) => this.pfSend<PFGoal>("POST", "/outreach/log", b);
+  pfUndoOutreach = () => this.pfSend<PFGoal>("DELETE", "/outreach/log/latest");
 }
