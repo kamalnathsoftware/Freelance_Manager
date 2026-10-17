@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.project_finder import (
+    foreign,
     jobs,
     leads,
     outreach,
@@ -22,3 +23,4 @@ router.include_router(sources.router)
 router.include_router(jobs.router)
 router.include_router(proposals.router)
 router.include_router(stats.router)
+router.include_router(foreign.router)

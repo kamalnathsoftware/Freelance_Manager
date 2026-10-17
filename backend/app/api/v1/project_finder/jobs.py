@@ -7,14 +7,12 @@ from pydantic import BaseModel
 from sqlalchemy import or_, select
 
 from app.api.deps import DB, CurrentUser
-from app.api.v1.project_finder.leads import LeadOut
-from app.api.v1.project_finder.leads import out as lead_out
+from app.api.v1.project_finder.leads import LeadOut, lead_view
 from app.models import PFJob, PFLead
 from app.schemas import ORM
 from app.services.common import get_owned
 from app.services.project_finder import refresh as svc
 from app.services.project_finder.feeds import SPEC_BY_KEY
-from app.services.project_finder.outreach import today_for
 
 router = APIRouter(tags=["project-finder"])
 
@@ -152,4 +150,4 @@ async def job_to_lead(job_id: uuid.UUID, user: CurrentUser, db: DB) -> LeadOut:
     if j.status == "new":
         j.status = "saved"
     await db.commit()
-    return lead_out(lead, today_for(user))
+    return await lead_view(db, user, lead)

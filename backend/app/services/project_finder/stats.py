@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import PFLead, PFOutreachLog, PFProposal, User
+from app.models import PFInvoice, PFLead, PFOutreachLog, PFProposal, User
 from app.services.project_finder.outreach import STATUSES, goal_status, today_for
 
 UNKNOWN = "Unknown"
@@ -95,6 +95,12 @@ async def compute(db: AsyncSession, user: User, days: int | None = None) -> dict
         )  # fmt: skip
 
     goal = await goal_status(db, user)
+    invoices = list(
+        (await db.execute(select(PFInvoice).where(PFInvoice.user_id == user.id))).scalars()
+    )
+    invoiced: dict[str, float] = defaultdict(float)
+    for inv in invoices:
+        invoiced[inv.currency] += inv.amount
     return {
         "days": days,
         "proposals": summary,
@@ -111,6 +117,12 @@ async def compute(db: AsyncSession, user: User, days: int | None = None) -> dict
                 key=lambda r: (-r["won"], -r["leads"], r["source"]),
             ),
         },  # fmt: skip
+        "foreign": {
+            "invoices": len(invoices),
+            "firc_pending": sum(not i.firc_received for i in invoices),
+            "invoiced": {k: round(v, 2) for k, v in sorted(invoiced.items())},
+            "countries": sorted({ld.country.strip() for ld in leads if ld.country.strip()}),
+        },
         "outreach": {
             "last_7_days": (await db.execute(sent_since(7))).scalar_one(),
             "last_30_days": (await db.execute(sent_since(30))).scalar_one(),

@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -13,9 +13,10 @@ from app.api.v1.project_finder.common import (
     HttpUrlStr,
     TzStr,
 )
-from app.models import PFJob, PFLead
+from app.models import PFJob, PFLead, PFSettings, User
 from app.schemas import ORM, Message
 from app.services.common import get_owned
+from app.services.project_finder import get_pf_settings, tz
 from app.services.project_finder.outreach import STATUSES, apply_status, today_for
 
 router = APIRouter(tags=["project-finder"])
@@ -77,16 +78,35 @@ class LeadOut(ORM):
     created_at: datetime
     updated_at: datetime
     follow_up_due: bool = False
+    tz_overlap: dict[str, Any] | None = None  # set when the lead has a time zone
 
 
-def out(lead: PFLead, today: date) -> LeadOut:
+class _Ctx:
+    """Per-request context needed to render leads (today in the user's zone + their overlap settings)."""
+
+    def __init__(self, today: date, cfg: PFSettings) -> None:
+        self.today, self.cfg = today, cfg
+
+
+def out(lead: PFLead, ctx: _Ctx) -> LeadOut:
     o = LeadOut.model_validate(lead)
     o.follow_up_due = (
         lead.next_follow_up is not None
-        and lead.next_follow_up <= today
+        and lead.next_follow_up <= ctx.today
         and lead.status not in ("won", "lost")
     )
+    if lead.timezone:
+        o.tz_overlap = tz.overlap(
+            ctx.cfg.home_tz,
+            lead.timezone,
+            start_hour=ctx.cfg.work_start_hour,
+            end_hour=ctx.cfg.work_end_hour,
+        )
     return o
+
+
+async def lead_view(db: DB, user: User, lead: PFLead) -> LeadOut:
+    return out(lead, _Ctx(today_for(user), await get_pf_settings(db, user.id)))
 
 
 async def _check_job(db: DB, user_id: uuid.UUID, job_id: uuid.UUID | None) -> None:
@@ -105,7 +125,8 @@ async def list_leads(
     limit: int = Query(500, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> list[LeadOut]:
-    today = today_for(user)
+    ctx = _Ctx(today_for(user), await get_pf_settings(db, user.id))
+    today = ctx.today
     stmt = select(PFLead).where(PFLead.user_id == user.id)
     if status:
         stmt = stmt.where(PFLead.status == status)
@@ -131,7 +152,7 @@ async def list_leads(
         PFLead.next_follow_up.is_(None), PFLead.next_follow_up, PFLead.created_at.desc()
     )
     rows = (await db.execute(stmt.limit(limit).offset(offset))).scalars()
-    return [out(r, today) for r in rows]
+    return [out(r, ctx) for r in rows]
 
 
 @router.post("/leads", response_model=LeadOut, status_code=201)
@@ -146,12 +167,12 @@ async def create_lead(body: LeadIn, user: CurrentUser, db: DB) -> LeadOut:
     if status != "new":
         await apply_status(db, user, lead, status, follow_up_given=follow_up_given)
     await db.commit()
-    return out(lead, today_for(user))
+    return await lead_view(db, user, lead)
 
 
 @router.get("/leads/{lead_id}", response_model=LeadOut)
 async def get_lead(lead_id: uuid.UUID, user: CurrentUser, db: DB) -> LeadOut:
-    return out(await get_owned(db, PFLead, lead_id, user.id), today_for(user))
+    return await lead_view(db, user, await get_owned(db, PFLead, lead_id, user.id))
 
 
 @router.patch("/leads/{lead_id}", response_model=LeadOut)
@@ -172,7 +193,7 @@ async def update_lead(lead_id: uuid.UUID, body: LeadPatch, user: CurrentUser, db
     elif lead.status in ("won", "lost"):
         lead.next_follow_up = None
     await db.commit()
-    return out(lead, today_for(user))
+    return await lead_view(db, user, lead)
 
 
 @router.delete("/leads/{lead_id}", response_model=Message)
