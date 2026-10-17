@@ -3,7 +3,7 @@ import type {
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
-import type { OutreachChannel, PFDraft, PFGoal, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFSettingsInput, PFTemplate, PFTemplateInput } from "./project-finder";
+import type { JobStatus, OutreachChannel, PFDraft, PFGoal, PFJob, PFJobQuery, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFRefreshResult, PFSettingsInput, PFSource, PFTemplate, PFTemplateInput } from "./project-finder";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) {
@@ -335,4 +335,13 @@ export class ApiClient {
   pfAddStarters = () => this.pfSend<PFTemplate[]>("POST", "/templates/starters");
   pfRenderTemplate = (id: string, lead_id?: string) => this.pfSend<PFDraft>("POST", `/templates/${id}/render`, { lead_id });
   pfGenerateDraft = (id: string, lead_id: string, instructions = "") => this.pfSend<PFDraft>("POST", `/templates/${id}/generate`, { lead_id, instructions });
+  pfSources = () => this.pfSend<PFSource[]>("GET", "/sources");
+  pfAddSource = (b: { name: string; url: string; notes?: string }) => this.pfSend<PFSource>("POST", "/sources", b);
+  pfUpdateSource = (id: string, b: Partial<Pick<PFSource, "name" | "url" | "status" | "notes">>) => this.pfSend<PFSource>("PATCH", `/sources/${id}`, b);
+  pfMarkChecked = (id: string) => this.pfSend<PFSource>("POST", `/sources/${id}/mark-checked`);
+  pfDeleteSource = (id: string) => this.pfSend("DELETE", `/sources/${id}`);
+  pfJobs = (q: PFJobQuery = {}) => this.pfSend<PFJob[]>("GET", `/jobs${ApiClient.qs({ ...q })}`);
+  pfRefreshJobs = (source?: string) => this.pfSend<PFRefreshResult[]>("POST", "/jobs/refresh", { source });
+  pfUpdateJob = (id: string, status: JobStatus) => this.pfSend<PFJob>("PATCH", `/jobs/${id}`, { status });
+  pfJobToLead = (id: string) => this.pfSend<PFLead>("POST", `/jobs/${id}/to-lead`);
 }

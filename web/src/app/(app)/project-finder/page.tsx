@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function ProjectFinderIndex() {
-  redirect("/project-finder/leads");
+  redirect("/project-finder/jobs");
 }

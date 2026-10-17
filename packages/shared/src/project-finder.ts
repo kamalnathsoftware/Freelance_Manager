@@ -31,3 +31,18 @@ export const TEMPLATE_KIND_LABEL: Record<TemplateKind, string> = { cold_email: "
 export interface PFTemplate { id: string; name: string; kind: TemplateKind; subject: string; body: string; created_at: string }
 export type PFTemplateInput = Pick<PFTemplate, "name" | "kind" | "subject" | "body">;
 export interface PFDraft { subject: string; body: string; missing: string[]; unknown: string[]; ai_generated: boolean }
+
+export interface PFSource {
+  id: string; key: string; name: string; url: string; kind: "feed" | "manual"; builtin: boolean; status: "active" | "paused";
+  last_checked_at: string | null; last_result: string; notes: string; hint: string;
+}
+export type JobStatus = "new" | "saved" | "dismissed";
+export interface PFJob {
+  id: string; source_key: string; source_name: string; title: string; company: string; description: string; budget: string;
+  budget_min: number | null; budget_max: number | null; currency: string; url: string; posted_at: string | null; remote: boolean;
+  skills: string[]; fit_score: number; score_reasons: string[]; status: JobStatus; created_at: string;
+}
+export interface PFJobQuery {
+  q?: string; keywords?: string; source?: string; min_score?: number; remote?: boolean; status?: "active" | JobStatus; sort?: "score" | "date"; limit?: number;
+}
+export interface PFRefreshResult { key: string; name: string; status: "ok" | "error" | "skipped" | "paused"; fetched: number; new: number; message: string }
