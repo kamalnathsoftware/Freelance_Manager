@@ -7,6 +7,8 @@ const PF_TABS = [
   { href: "/project-finder/jobs", label: "Jobs" },
   { href: "/project-finder/leads", label: "Leads" },
   { href: "/project-finder/templates", label: "Templates" },
+  { href: "/project-finder/proposals", label: "Proposals" },
+  { href: "/project-finder/stats", label: "Stats" },
   { href: "/project-finder/sources", label: "Sources" },
   { href: "/project-finder/settings", label: "Settings" },
 ];

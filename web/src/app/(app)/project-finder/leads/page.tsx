@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { GoalCard } from "@/components/project-finder/goal-card";
 import { LeadDialog } from "@/components/project-finder/lead-form";
+import { OverlapBadge } from "@/components/project-finder/tz-overlap";
 import { api } from "@/lib/api";
 import { errMsg } from "@/lib/pf";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ function Leads() {
       <div className="flex flex-wrap items-center gap-2 text-xs">
         {l.next_follow_up && <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5", l.follow_up_due ? "border-danger text-danger" : "border-border text-muted")}><CalendarClock size={12} aria-hidden />{l.follow_up_due ? "Due " : ""}{l.next_follow_up}</span>}
         {l.country && <span className="inline-flex items-center gap-1 text-muted"><Globe size={12} aria-hidden />{l.country}</span>}
+        {l.tz_overlap && <OverlapBadge o={l.tz_overlap} />}
       </div>
       <div className="flex items-center gap-2">
         {/* keyboard- and touch-accessible alternative to drag and drop */}

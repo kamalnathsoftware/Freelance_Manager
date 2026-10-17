@@ -3,7 +3,7 @@ import type {
   PlatformEvent, PlatformProfile, Proposal, SearchResults, SendResult, SlaAlerts, ProposalAnalytics, ProposalTemplate, SavedSearch, SessionInfo, Stage, SubmitResult,
   RealtimeEvent, Suggestion, SyncLog, TokenPair, User,
 } from "./types";
-import type { JobStatus, OutreachChannel, PFDraft, PFGoal, PFJob, PFJobQuery, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFRefreshResult, PFSettingsInput, PFSource, PFTemplate, PFTemplateInput } from "./project-finder";
+import type { JobStatus, OutreachChannel, PFDraft, PFGoal, PFJob, PFJobQuery, PFLead, PFLeadInput, PFLeadPatch, PFSettings, PFInvoice, PFInvoiceInput, PFProposal, PFProposalInput, PFRefreshResult, PFSettingsInput, PFStats, PFTzOverlap, PFSource, PFTemplate, PFTemplateInput } from "./project-finder";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) {
@@ -344,4 +344,16 @@ export class ApiClient {
   pfRefreshJobs = (source?: string) => this.pfSend<PFRefreshResult[]>("POST", "/jobs/refresh", { source });
   pfUpdateJob = (id: string, status: JobStatus) => this.pfSend<PFJob>("PATCH", `/jobs/${id}`, { status });
   pfJobToLead = (id: string) => this.pfSend<PFLead>("POST", `/jobs/${id}/to-lead`);
+  pfProposals = (q: { status?: string; source?: string; lead_id?: string; q?: string } = {}) => this.pfSend<PFProposal[]>("GET", `/proposals${ApiClient.qs(q)}`);
+  pfCreateProposal = (b: PFProposalInput) => this.pfSend<PFProposal>("POST", "/proposals", b);
+  pfUpdateProposal = (id: string, b: PFProposalInput) => this.pfSend<PFProposal>("PATCH", `/proposals/${id}`, b);
+  pfDeleteProposal = (id: string) => this.pfSend("DELETE", `/proposals/${id}`);
+  pfStats = (days?: number) => this.pfSend<PFStats>("GET", `/stats${ApiClient.qs({ days })}`);
+  pfInvoices = (q: { lead_id?: string; firc?: "pending" | "received" } = {}) => this.pfSend<PFInvoice[]>("GET", `/invoices${ApiClient.qs(q)}`);
+  pfCreateInvoice = (b: PFInvoiceInput) => this.pfSend<PFInvoice>("POST", "/invoices", b);
+  pfUpdateInvoice = (id: string, b: Partial<Omit<PFInvoiceInput, "lead_id">>) => this.pfSend<PFInvoice>("PATCH", `/invoices/${id}`, b);
+  pfDeleteInvoice = (id: string) => this.pfSend("DELETE", `/invoices/${id}`);
+  pfForeignInfo = () => this.pfSend<{ disclaimer: string; payment_methods: string[] }>("GET", "/foreign/info");
+  pfTzOverlap = (timezone: string) => this.pfSend<PFTzOverlap>("GET", `/foreign/tz-overlap${ApiClient.qs({ timezone })}`);
+  pfTzSuggest = (country: string) => this.pfSend<{ timezone: string }>("GET", `/foreign/tz-suggest${ApiClient.qs({ country })}`);
 }

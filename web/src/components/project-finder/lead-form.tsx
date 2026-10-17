@@ -7,6 +7,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
+import { InvoicesPanel } from "@/components/project-finder/invoices-panel";
+import { OverlapPanel } from "@/components/project-finder/tz-overlap";
 import { COMMON_TIMEZONES, LEAD_SOURCES, errMsg, fieldErrors } from "@/lib/pf";
 
 const blank = (): PFLeadInput => ({
@@ -65,7 +67,10 @@ export function LeadDialog({ lead, open, onClose, initial }: { lead?: PFLead | n
         <Input label="Next follow-up" type="date" value={f.next_follow_up ?? ""} error={errors.next_follow_up} onChange={(e) => set("next_follow_up", e.target.value || null)} />
         <fieldset className="grid gap-3 rounded-xl border border-border p-3 sm:col-span-2 sm:grid-cols-3">
           <legend className="px-1 text-xs font-medium text-muted">Foreign client (optional)</legend>
-          {txt("country", "Country")}
+          <Input label="Country" value={f.country ?? ""} onChange={(e) => set("country", e.target.value)} onBlur={async () => {
+            if (!f.country?.trim() || f.timezone) return;
+            try { const r = await api.pfTzSuggest(f.country); if (r.timezone) set("timezone", r.timezone); } catch { /* suggestion is optional */ }
+          }} />
           <div className="space-y-1.5">
             <label htmlFor="pf-tz" className="text-sm font-medium">Time zone</label>
             <input id="pf-tz" list="pf-tzs" value={f.timezone ?? ""} onChange={(e) => set("timezone", e.target.value)} placeholder="America/New_York" aria-invalid={!!errors.timezone} className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm" />
@@ -73,7 +78,9 @@ export function LeadDialog({ lead, open, onClose, initial }: { lead?: PFLead | n
             {errors.timezone && <p role="alert" className="text-xs text-danger">{errors.timezone}</p>}
           </div>
           {txt("currency", "Currency", { placeholder: "USD", maxLength: 3 })}
+          <OverlapPanel timezone={f.timezone ?? ""} />
         </fieldset>
+        {lead && <InvoicesPanel leadId={lead.id} defaultCurrency={f.currency || lead.currency} />}
         <div className="space-y-1.5 sm:col-span-2">
           <label htmlFor="pf-notes" className="text-sm font-medium">Notes</label>
           <textarea id="pf-notes" rows={3} maxLength={5000} value={f.notes ?? ""} onChange={(e) => set("notes", e.target.value)} className="w-full rounded-xl border border-border bg-card p-3 text-sm" />
