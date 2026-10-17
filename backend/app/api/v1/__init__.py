@@ -19,6 +19,7 @@ from app.api.v1 import (
     orders,
     platforms,
     profiles,
+    project_finder,
     projects,
     proposals,
     search,
@@ -56,3 +57,4 @@ router.include_router(assistant.router)
 router.include_router(team.router)
 router.include_router(analytics.router)
 router.include_router(ops.router)
+router.include_router(project_finder.router)

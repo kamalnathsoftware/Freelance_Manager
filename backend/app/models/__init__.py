@@ -48,6 +48,16 @@ from app.models.platform import (
     PortfolioItem,
     SyncLog,
 )
+from app.models.project_finder import (
+    PFInvoice,
+    PFJob,
+    PFLead,
+    PFOutreachLog,
+    PFProposal,
+    PFSettings,
+    PFSource,
+    PFTemplate,
+)
 from app.models.user import AuditLog, AuthSession, Role, TeamMember, User
 from app.models.work import (
     CalendarConnection,
@@ -65,6 +75,14 @@ from app.models.work import (
 )
 
 __all__ = [
+    "PFInvoice",
+    "PFJob",
+    "PFLead",
+    "PFOutreachLog",
+    "PFProposal",
+    "PFSettings",
+    "PFSource",
+    "PFTemplate",
     "AutomationRule",
     "AutomationRun",
     "Form",

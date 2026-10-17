@@ -19,6 +19,8 @@ dependencies = [
   "celery>=5.4",
   "python-multipart>=0.0.9",
   "fpdf2>=2.7",
+  "defusedxml>=0.7",
+  "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]
